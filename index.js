@@ -34,12 +34,15 @@ app.use(function (req, res, next) {
     // Pass to next layer of middleware
     next();
 });
-app.listen(3001, () => {
-    console.log('Server is running ');
+
+var PORT = process.env.PORT || 3001;
+
+app.listen(PORT, () => {
+    console.log('Server is running on ',PORT);
 })
 
-app.get('/api/', (req, res) => {
-    res.send('Welcome')
+app.get('/', (req, res) => {
+    res.send('Welcome to Advertisement publish')
 })
 
 app.get('/createdb', (req, res) => {
