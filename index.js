@@ -1,6 +1,9 @@
 var connection = require('./db.connection');
 const express = require('express');
+
 var app = express();
+var cors = require('cors');
+app.use(cors());
 const route = express.Router;
 var bodyParser = require('body-parser');
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
@@ -8,7 +11,7 @@ app.use(bodyParser.json());
 var jwt = require('jsonwebtoken');
 const config = require('./config');
 const authJwt = require('./auth/verifyToken');
-var cors = require('cors');
+
 
 connection.connect((err) => {
     if (err) {
@@ -16,7 +19,7 @@ connection.connect((err) => {
     }
     console.log("connected");
 })
-app.use(cors());
+
 app.use(function (req, res, next) {
     // Website you wish to allow to connect
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -90,7 +93,7 @@ app.post('/api/getLocation', [authJwt.verifyToken],(req, res) => {
         && req.body.city_id != "undefined" && req.body.state_id != null &&
         req.body.state_id != "" && req.body.state_id != "undefined") {
         console.log("----------- ifffffffffffffffffffffff");
-        query = " select * from publish_advertisement.location_master where country_id =" + req.body.country_id + " and state_id=" + req.body.state_id + " and city_id=" + req.body.city_id;
+        query = " select * from greattug_advt_publish.location_master where country_id =" + req.body.country_id + " and state_id=" + req.body.state_id + " and city_id=" + req.body.city_id;
 
         console.log("query-------------", query);
     }
@@ -104,6 +107,7 @@ app.post('/api/getLocation', [authJwt.verifyToken],(req, res) => {
         })
 
     } else {
+        console.log("error===>",err)
         res.json({
             status: 400,
             message: "There is no location specified for specified/selected country, state and city"
