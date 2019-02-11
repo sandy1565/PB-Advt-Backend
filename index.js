@@ -74,14 +74,12 @@ app.get('/api/getBlock', [authJwt.verifyToken],(req, res) => {
 ////////////////// get location ///////////////////////
 
 app.post('/api/getLocation', [authJwt.verifyToken],(req, res) => {
-    // var locationData = {
-    //     country_id : req.selectedCountry,
-    //     state_id : req.selectedState,
-    //     city_id : req.selectedCity
-    //   } 
+    var locationData = {
+        country_id : req.selectedCountry,
+        state_id : req.selectedState,
+        city_id : req.selectedCity
+      } 
     var location = req.get("locationData");
-
-
     console.log("--------req.body.country_id---------- ", req.body.country_id);
     console.log("---------req.body.city_id---------- ", req.body.city_id);
     console.log("-----------req.body.state_id-------- ", req.body.state_id);
@@ -152,6 +150,16 @@ app.get('/api/getCities', [authJwt.verifyToken], (req, res) => {
     })
 })
 
+/* get location */
+app.get('/api/getLocation', [authJwt.verifyToken], (req, res) => {
+    connection.query('select * from location_master', (err, result) => {
+        if (err) throw err;
+        else {
+            res.json(result)
+        }
+        // console.log(result)
+    })
+})
 
 ////////////////////get floor ////////////////////////
 
@@ -167,8 +175,8 @@ app.get('/api/getFloor', [authJwt.verifyToken], (req, res) => {
 
 // Get all person 
 app.get('/api/getPerson', [authJwt.verifyToken], (req, res) => {
-connection.query('SELECT *, DATE_FORMAT(date_of_birth, "%d %m %Y") as date_of_birth FROM publish_advertisement.person_master', (err, result) => {
-        console.log(pid)
+connection.query('SELECT *, DATE_FORMAT(date_of_birth, "%d %m %Y") as date_of_birth FROM greattug_advt_publish.person_master', (err, result) => {
+        // console.log(pid)
         if (err) throw err;
         else {
             console.log(result);
@@ -269,7 +277,6 @@ app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser,
         }
     })
 })
-
 
 ///////////delete person/////////////
 
