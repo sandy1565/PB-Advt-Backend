@@ -65,7 +65,6 @@ app.get('/api/getBlock', [authJwt.verifyToken],(req, res) => {
     connection.query('select * from block_master', (err, rows) => {
         if (err) throw err;
         else {
-
             res.json(rows);
         }
     })
@@ -394,6 +393,9 @@ app.post('/api/login', urlencodedParser, function (req, res) {
 
     var username = req.body.username;
     var password = req.body.password;
+    console.log('---------------- username', username);
+    console.log('------------------ password', password);
+    
     resultsObj = {};
     if (username != null || username != "" || username != "undefined" &&
         password != null || password != "" || password != "undefined") {
@@ -485,14 +487,25 @@ app.post('/api/advtPublish', [authJwt.verifyToken], urlencodedParser, function (
     connection.query(query, function (err, result) {
         if (err) throw err;
         console.log('added')
+        // console.log('----------------', req.body.fromAge);
+        console.log('==================', req.body.text_message);
+        
         var publishDetails = {
-            gender_type: req.body.gender_type,
+            gender: req.body.gender,
+            country_id: req.body.country_id,
+            state_id: req.body.state_id,
+            city_id: req.body.city_id,
             location_id: req.body.location_id,
             block_id: req.body.block_id,
-            username: req.body.username
+            from_age: req.body.fromAge,
+            to_age: req.body.toAge,
+            text_message: req.body.text_message
+            // username: 'sandeep'
         }
-        var insertQuery = 'INSERT INTO advt_publish SET ?';
+        var insertQuery = 'INSERT INTO greattug_advt_publish.advt_details SET ?';
         console.log('---------------- insertQuery', insertQuery);
+        console.log('-----------------------------------', publishDetails);
+        
         connection.query(insertQuery, publishDetails, function (err, res) {
             if (err) throw err;
             console.log('1 row added');
