@@ -431,8 +431,7 @@ app.post('/api/login', urlencodedParser, function (req, res) {
                 })
             }// if closed
             else if (results.length == 0 || results.length < 0) {
-                ////console.log("================", results.length);
-                
+                ////console.log("================", results.length);   
                 ////console.log(" Username or password does not match");
                 res.json({
                     status: 401,

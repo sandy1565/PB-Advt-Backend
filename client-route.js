@@ -4,7 +4,7 @@ var connection = require('./db.connection');
 const authJwt = require('./auth/verifyToken');
 
 router.post("/", [authJwt.verifyToken],function(req,res){
-    insertDocument(profile_pic,req,res);
+    insertDocument(req.body.profile_pic,req,res);
     return;
     ({profile_pic,client_name,country_id,state_id,city_id,location_id,block_id,firm_type,gst_number,representative_name,representative_id,phone_number,email_address,registration_details} = req.body);
     if(!client_name || !country_id || !state_id || !city_id
@@ -144,14 +144,14 @@ function binaryToBase64(binary){
 
 
 function insertDocument(base64String,req,res){
-    if(!base64String){
-        console.log(base64String);
+    if(base64String){
+        // console.log(base64String);
         const buf = base64ToBuffr(base64String);
         const query = 'insert into base64_file values set ?';
         let file_name = '';
         let file_type = '';
         let file_data = buf;
-        connection.query(query,[file_name,file_type,file_data],function(err,result){
+        connection.query(query,{file_name,file_type,file_data},function(err,result){
             console.log("result",result,err);
             if(err){
                 res.status(201).send({
