@@ -11,13 +11,13 @@ app.use(bodyParser.json());
 var jwt = require('jsonwebtoken');
 const config = require('./config');
 const authJwt = require('./auth/verifyToken');
-
+var clientRouter  = require('./client-route');
 
 connection.connect((err) => {
     if (err) {
         throw err;
     }
-    console.log("connected");
+    ////console.log("connected");
 })
 
 app.use(function (req, res, next) {
@@ -41,7 +41,7 @@ app.use(function (req, res, next) {
 var PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-    console.log('Server is running on ',PORT);
+    ////console.log('Server is running on ',PORT);
 })
 
 app.get('/', (req, res) => {
@@ -54,7 +54,7 @@ app.get('/createdb', (req, res) => {
         if (err) {
             throw err;
         }
-        console.log(res);
+        ////console.log(res);
         res.send('database created');
     })
 });
@@ -79,39 +79,39 @@ app.post('/api/getLocation', [authJwt.verifyToken],(req, res) => {
         city_id : req.selectedCity
       } 
     var location = req.get("locationData");
-    console.log("--------req.body.country_id---------- ", req.body.country_id);
-    console.log("---------req.body.city_id---------- ", req.body.city_id);
-    console.log("-----------req.body.state_id-------- ", req.body.state_id);
-    //console.log("-----------req.body.country_id", country_id);
+    ////console.log("--------req.body.country_id---------- ", req.body.country_id);
+    ////console.log("---------req.body.city_id---------- ", req.body.city_id);
+    ////console.log("-----------req.body.state_id-------- ", req.body.state_id);
+    //////console.log("-----------req.body.country_id", country_id);
 
     var query = "";
     if (req.body.country_id != null && req.body.country_id != ""
         && req.body.country_id != "undefined" && req.body.city_id != null && req.body.city_id != ""
         && req.body.city_id != "undefined" && req.body.state_id != null &&
         req.body.state_id != "" && req.body.state_id != "undefined") {
-        console.log("----------- ifffffffffffffffffffffff");
+        ////console.log("----------- ifffffffffffffffffffffff");
         query = " select * from greattug_advt_publish.location_master where country_id =" + req.body.country_id + " and state_id=" + req.body.state_id + " and city_id=" + req.body.city_id;
 
-        console.log("query-------------", query);
+        ////console.log("query-------------", query);
     }
     if (query != "") {
         connection.query(query, (err, result) => {
             if (err) throw err;
             else {
                 res.json(result);
-                console.log(result)
+                ////console.log(result)
             }
         })
 
     } else {
-        console.log("error===>",err)
+        ////console.log("error===>",err)
         res.json({
             status: 400,
             message: "There is no location specified for specified/selected country, state and city"
         })
 
     }
-    // console.log("location ====================",result);
+    // ////console.log("location ====================",result);
     // connection.query('select * from location_master where country_id=? && state_id= ? && city_id= ?'
 });
 
@@ -122,7 +122,7 @@ app.get('/api/getCountryDetails', [authJwt.verifyToken], (req, res) => {
         else {
             res.json(result)
         }
-        // console.log(result)
+        // ////console.log(result)
     })
 });
 
@@ -133,7 +133,7 @@ app.get('/api/getState', [authJwt.verifyToken], (req, res) => {
         else {
             res.json(result)
         }
-        // console.log(result)
+        // ////console.log(result)
     })
 });
 
@@ -145,7 +145,7 @@ app.get('/api/getCities', [authJwt.verifyToken], (req, res) => {
         else {
             res.json(result)
         }
-        // console.log(result)
+        // ////console.log(result)
     })
 })
 
@@ -156,7 +156,7 @@ app.get('/api/getLocation', [authJwt.verifyToken], (req, res) => {
         else {
             res.json(result)
         }
-        // console.log(result)
+        // ////console.log(result)
     })
 })
 
@@ -168,17 +168,17 @@ app.get('/api/getFloor', [authJwt.verifyToken], (req, res) => {
         else {
             res.json(result)
         }
-        // console.log(result)
+        // ////console.log(result)
     })
 });
 
 // Get all person 
 app.get('/api/getPerson', [authJwt.verifyToken], (req, res) => {
 connection.query('SELECT *, DATE_FORMAT(date_of_birth, "%d %m %Y") as date_of_birth FROM greattug_advt_publish.person_master', (err, result) => {
-        // console.log(pid)
+        // ////console.log(pid)
         if (err) throw err;
         else {
-            console.log(result);
+            ////console.log(result);
             res.json(result)
         }
     });
@@ -197,10 +197,10 @@ connection.query('SELECT *, DATE_FORMAT(date_of_birth, "%d %m %Y") as date_of_bi
 //         left join state_master ON person_master.state_id = state_master.state_id
 //         left join city_master ON person_master.city_id = city_master.city_id
 //         where person_master.person_id = ?`,[person_id], (err, result) => {
-//             // console.log(result);
+//             // ////console.log(result);
 //         if (err) throw err;
 //         else {
-//             console.log("Result is here: ",result);
+//             ////console.log("Result is here: ",result);
 //             res.json(result)
 //         }
 //     })
@@ -228,18 +228,18 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
         username: 'akash',
         creation_date: req.body.creation_date
     }
-    // console.log(req.body);
+    // ////console.log(req.body);
     var mobileNumberValidation = 'select COUNT(*) AS count from person_master WHERE mobile_number1 = ?'
     connection.query(mobileNumberValidation, [personDetails.mobile_number1], function (err, rows) {
-        console.log(rows);
+        ////console.log(rows);
         const count = rows[0].count;
-        console.log(count);        
+        ////console.log(count);        
         if(count > 0) {
             res.json({
                 status: 401,
                 message: "Given Mobile Number is Registered. Please provide another number."
             });
-            console.log("Please Provide another number");
+            ////console.log("Please Provide another number");
         }
         else {
             res.json({
@@ -247,7 +247,7 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
                 message: "User is inactive. Kindly contact administrator"
             });
             connection.query("INSERT INTO person_master SET ?", personDetails, function(err, result) {
-                console.log("result : ", result);
+                ////console.log("result : ", result);
             });
         }
         res.send(this.firstname);
@@ -258,7 +258,7 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
 
 app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser, function (req, res) {
     var query = "update person_master SET firstname=?,middlename=?,lastname=?, block_id=?, address=?, floor_id=?, location_id=?, date_of_birth=?, pincode=?, mobile_number1=?, mobile_number2=?, gender=? WHERE person_id=?";
-    console.log('query --- ', query);
+    ////console.log('query --- ', query);
     connection.query(query, [req.body.firstname, req.body.middlename, req.body.lastname, req.block_id, req.address, req.floor_id, req.location_id, req.date_of_birth, req.pincode, req.mobile_number1, req.mobile_number2, req.gende, req.body.person_id], function (err, result) {
         if (err) {
             res.json({
@@ -267,8 +267,8 @@ app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser,
             })
         }
         else {
-            console.log(query);
-            console.log("firstName--------", req.body.firstname);
+            ////console.log(query);
+            ////console.log("firstName--------", req.body.firstname);
             res.json({
                 status: 200,
                 message: result
@@ -282,12 +282,12 @@ app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser,
 
 app.delete('/api/deletePerson/:id', [authJwt.verifyToken], function (req, res) {
     var id = req.params.id;
-    console.log(req.body);
+    ////console.log(req.body);
     const query = "delete from `personform` where id=" + id;
-    console.log(query);
+    ////console.log(query);
     connection.query(query, function (error, rows) {
         if (error) {
-            console.log('Error in query');
+            ////console.log('Error in query');
         }
         else {
             res.send('Record has been deleted');
@@ -304,7 +304,7 @@ app.get('/api/getClient', [authJwt.verifyToken], (req, res) => {
     connection.query('select * from client_master', (err, result) => {
         if (err) throw err;
         else {
-            // console.log(result);
+            // ////console.log(result);
             res.json(result)
         }
     })
@@ -317,7 +317,7 @@ app.get('/api/getAdvt', [authJwt.verifyToken], (req, res) => {
     connection.query('select clientName, advt_details from client_master inner join advt_master on client_master.client_id= advt_master.client_id', (err, result) => {
         if (err) throw err;
         else {
-            console.log(result);
+            ////console.log(result);
             res.json(result)
         }
     })
@@ -335,10 +335,10 @@ app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req,
         age_to: req.body.age_to,
         username: req.body.username,
     }
-    console.log(req.body);
+    ////console.log(req.body);
     connection.query('INSERT INTO advt_master SET ?', advtDetails, function (err, res) {
         if (err) throw err;
-        console.log("1 record added");
+        ////console.log("1 record added");
     })
     res.send(this.advt_details);
 })
@@ -362,7 +362,7 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
     var sql = "update advt_master set ? where id=" + req.params.id;
     connection.query(sql, function (err, result) {
         if (err) {
-            console.log(err);
+            ////console.log(err);
 
         }
         else {
@@ -374,13 +374,13 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
 
 app.delete('/api/deleteAdvt/:id', [authJwt.verifyToken], function (req, res) {
     var id = req.params.id;
-    console.log(req.body);
+    ////console.log(req.body);
     const query = "delete from `advt_master` where id=" + id;
-    console.log(query);
+    ////console.log(query);
     connection.query(query, function (error, rows) {
         if (error) {
-            console.log('Error in query');
-            console.log(query)
+            ////console.log('Error in query');
+            ////console.log(query)
         }
         else {
             res.send('Record has been deleted');
@@ -393,19 +393,19 @@ app.post('/api/login', urlencodedParser, function (req, res) {
 
     var username = req.body.username;
     var password = req.body.password;
-    console.log('---------------- username', username);
-    console.log('------------------ password', password);
+    ////console.log('---------------- username', username);
+    ////console.log('------------------ password', password);
     
     resultsObj = {};
     if (username != null || username != "" || username != "undefined" &&
         password != null || password != "" || password != "undefined") {
         var queryLogin = 'SELECT * FROM login WHERE username = ? and password = ? and isActive = "Y"';
-        console.log(queryLogin);
+        ////console.log(queryLogin);
         connection.query(queryLogin, [username, password], function (error, results, fields) {
             if (results.length > 0) {
-            console.log("----- if (results.length > 0)");
+            ////console.log("----- if (results.length > 0)");
 
-                // console.log("===============",results.length)
+                // ////console.log("===============",results.length)
                  var string = JSON.stringify(results);
                  var json = JSON.parse(string);
                 // if (json[0].isActive == 'N') {
@@ -431,9 +431,9 @@ app.post('/api/login', urlencodedParser, function (req, res) {
                 })
             }// if closed
             else if (results.length == 0 || results.length < 0) {
-                console.log("================", results.length);
+                ////console.log("================", results.length);
                 
-                console.log(" Username or password does not match");
+                ////console.log(" Username or password does not match");
                 res.json({
                     status: 401,
                     message: "Username or Password does not match"
@@ -441,7 +441,7 @@ app.post('/api/login', urlencodedParser, function (req, res) {
             }
         });
     } else {
-        console.log(" --------  Invalid User")
+        ////console.log(" --------  Invalid User")
        
         res.json({
                  status: 401,
@@ -456,11 +456,11 @@ app.post('/api/login', urlencodedParser, function (req, res) {
 app.get('/api/getClient', [authJwt.verifyToken], function (req, res) {
     connection.query('SELECT * FROM client_master', function (error, rows) {
         if (error) {
-            console.log('Error  y')
+            ////console.log('Error  y')
         }
         else {
-            console.log('Successful query')
-            console.log(rows);
+            ////console.log('Successful query')
+            ////console.log(rows);
             // res.send('Hello ' +rows[1].firstname);
             res.json(rows);
         }
@@ -483,12 +483,12 @@ app.get('/api/getPublish', [authJwt.verifyToken], (req, res) => {
 
 app.post('/api/advtPublish', [authJwt.verifyToken], urlencodedParser, function (req, res) {
     var query = 'SELECT advt_id FROM advt_master';
-    console.log(query);
+    ////console.log(query);
     connection.query(query, function (err, result) {
         if (err) throw err;
-        console.log('added')
-        // console.log('----------------', req.body.fromAge);
-        console.log('==================', req.body.text_message);
+        ////console.log('added')
+        // ////console.log('----------------', req.body.fromAge);
+        ////console.log('==================', req.body.text_message);
         
         var publishDetails = {
             gender: req.body.gender,
@@ -503,57 +503,18 @@ app.post('/api/advtPublish', [authJwt.verifyToken], urlencodedParser, function (
             // username: 'sandeep'
         }
         var insertQuery = 'INSERT INTO greattug_advt_publish.advt_details SET ?';
-        console.log('---------------- insertQuery', insertQuery);
-        console.log('-----------------------------------', publishDetails);
+        ////console.log('---------------- insertQuery', insertQuery);
+        ////console.log('-----------------------------------', publishDetails);
         
         connection.query(insertQuery, publishDetails, function (err, res) {
             if (err) throw err;
-            console.log('1 row added');
+            ////console.log('1 row added');
         })
         // res.send('successful');
     });
 })
 
-// function setSqlQueryForPerson(publishDetails) {
-
-//     var query = 'SELECT * FROM publish_advertisement.personform';
-
-//     if(publishDetails.gender_type != null || publishDetails.gender_type != '' || 
-//         publishDetails.location_id || publishDetails.location_id != null ) {
-//             query = query + 'where';
-//     }
-
-//     // if gender is present
-//     if(publishDetails.gender_type != null || publishDetails.gender_type != '') {
-//         query = query + 'gender =' +publishDetails.gender_type;
-//         // Check block id array length
-//         if(publishDetails.block_id != null || publishDetails.block_id != '' ) {
-//             // put a loop if multiple selection of block id there 
-//             query = query + ' and block_id =' + publishDetails.block_id ;
-//     }
-
-//     if(publishDetails.location_id != null || publishDetails.location_id != '' ) {
-//         // put a loop if multiple selection of location_idthere 
-//         query = query + ' and location_id =' + publishDetails.location_id ;
-// }
-
-//     }elseif()
-//     }
 
 
 
-
-
-    // db.query('SELECT count(*) as Resultcount FROM tablename WHERE email = ? and password = ?', [post.email, post.password], function(error, result){
-    //     if (result[0].Resultcount == 0){
-    //         var query2 = db.query('INSERT INTO tablename SET ?', [post], function(err, result) {
-    //             if(err){
-    //               console.log(err);
-    //            }
-    //              console.log(result);
-    //           });
-    //     }
-    //     else{
-    //         console.log('have data already');
-    //     }
-    // });
+app.use('/api/client',clientRouter);
