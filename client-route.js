@@ -3,9 +3,9 @@ var router = express.Router();
 var connection = require('./db.connection');
 const authJwt = require('./auth/verifyToken');
 
-router.post("/", [authJwt.verifyToken],function(req,res){
-    insertDocument(profile_pic,req,res);
-    return;
+router.post("/", [authJwt.verifyToken],  function(req,res){
+  
+    // getDocument(req,res);
     ({profile_pic,client_name,country_id,state_id,city_id,location_id,block_id,firm_type,gst_number,representative_name,representative_id,phone_number,email_address,registration_details} = req.body);
     if(!client_name || !country_id || !state_id || !city_id
         || !location_id || !block_id || !gst_number || !representative_name
@@ -61,13 +61,15 @@ router.post("/", [authJwt.verifyToken],function(req,res){
         loginUsrPwd += ~~(Math.random()*100);
         //MAKING ENTRY TO LOGIN TABLE FOR CLIENT LOGIN
         const loginEntry = "insert into login set ?";
+     
+
         connection.query(loginEntry, {
             username:loginUsrName,
             password:loginUsrPwd,
             type_of_user:'CLIENT',
             firstname:client_name,
             isActive:'Y'
-        }, function(err, result) {
+        }, async function(err, result) {
             console.log(err);
             if(err){
                 res.status(201).send({
@@ -79,6 +81,31 @@ router.post("/", [authJwt.verifyToken],function(req,res){
 
             const insertRecordToClientMaster = "insert into client_master set ?";
             try{
+                let data =  await insertDocument(req.body.profile_pic,'profile_pic');
+                let profile_id = null;
+                if(data){
+                   file_id = data.insertId;
+                }
+                else{
+                    res.send({
+                        error:true,
+                        message:"Can't upload document"
+                    });
+                }
+
+                data =  await insertDocument(req.body.profile_pic,'document_file');
+                let document_id = null;
+                if(data){
+                    document_id = data.insertId;
+                }
+                else{
+                    res.send({
+                        error:true,
+                        message:"Can't upload document"
+                    });
+                }
+
+                
                 connection.query(insertRecordToClientMaster, {client_name,country_id,state_id,
                     city_id,location_id,block_id,
                     gst_number,representative_name,
@@ -86,7 +113,10 @@ router.post("/", [authJwt.verifyToken],function(req,res){
                     email_address,registration_details,
                     user_name:loginUsrName,
                     firm_type,
-                    admin_user_name:req.username}, function(err, result) {
+                    admin_user_name:req.username,
+                    profile_id,
+                    document_id
+                }, function(err, result) {
                     if(err){
                         connection.query('delete from login where username = ?',[loginUsrName],function(err,result){
     
@@ -120,6 +150,10 @@ router.post("/", [authJwt.verifyToken],function(req,res){
             
             return;
         });
+
+
+
+
     });
 });
 
@@ -128,9 +162,7 @@ router.post("/profile_pic",function(req,res){
 });
 
 
-router.get('/profile_pic',function(req,res){
 
-});
 
 
 function base64ToBuffr(base64String){
@@ -138,39 +170,57 @@ function base64ToBuffr(base64String){
     return buf;
 }
 
-function binaryToBase64(binary){
-    return Buffer.from(binary,'binary').toString('base64');
+
+function bufferToBase64(buffer){
+    return Buffer.from(buffer,'binary').toString('ascii');
 }
 
+async function getDocument(req,res){
+    const query = 'select * from base64_file where file_id = 3';
+    let record = null;
+    await connection.query(query,[],function(err,result){
+        console.log("error",err);
+        console.log("result", result);
+        let record = result[0]
+        if(err || !record){           
+           return null;
+        }
+        record = {file_name:result.file_name,file_type:result.file_data,file_id:result.file_id};
+        record.file_data = bufferToBase64(record.file_data);
+    });
+    return record;
+}
 
-function insertDocument(base64String,req,res){
-    if(!base64String){
-        console.log(base64String);
-        const buf = base64ToBuffr(base64String);
-        const query = 'insert into base64_file values set ?';
-        let file_name = '';
-        let file_type = '';
-        let file_data = buf;
-        connection.query(query,[file_name,file_type,file_data],function(err,result){
-            console.log("result",result,err);
-            if(err){
-                res.status(201).send({
-                    error:true,
-                    message:'Error saving files'
-                });
-            }
-
-            res.send({
-                message:'successfully uploaded'
-            })
-
+async function insertDocument(base64String,file_name){
+    console.log("filetye",file_name)
+    if(base64String){
+        // console.log(base64String);
+        const buffer = base64ToBuffr(base64String);
+        const query = 'insert into base64_file set ?';
+        let file_type = 'test';
+        let file_data = buffer;
+        let data = null;
+        try{
+            file_type = base64String.split(";")[0].split(":")[1];
+        }
+        catch(e){
+            return null;
+        }
+        await new Promise((resolve,reject)=>{
+            connection.query(query,{file_name,file_type,file_data},function(err,result){
+                if(err){                
+                    resolve(null);
+                }
+                else{
+                    data = result;
+                    resolve(result);
+                }             
+            });
         });
-        return;
+
+        return data;
     }
-    return  res.status(201).send({
-        error:true,
-        message:'Please send base64 image'
-    });;
+    return null;
 }
 
 
