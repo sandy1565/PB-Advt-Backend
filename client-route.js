@@ -373,7 +373,7 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
                         to: `${email_address}`, // list of receivers
                         subject: "Hello ✔", // Subject line
                         text: "Hello world?", // plain text body
-                        html: `<h2>Hello ${clientUserName}</h2>
+                        html: `<h2>Hello ${client_name}</h2>
                         <p>Thanks For Connecting to Advertisment publish<br>
                         Your user name is ${loginUsrName} and generated password is ${loginUsrPwd}
                         </p>
@@ -381,7 +381,12 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
                       };
                     
                       // send mail with defined transport object
-                      let info = await transporter.sendMail(mailOptions)
+                      try{
+                        let info = await transporter.sendMail(mailOptions)
+                      }
+                      catch(e){
+                        console.log(e);
+                      }
                     
                     res.send({
                         message: 'Successfully added Client Record'
