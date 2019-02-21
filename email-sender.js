@@ -1,5 +1,6 @@
 "use strict";
 const nodemailer = require("nodemailer");
+var smtpTransport = require('nodemailer-smtp-transport');
 // async..await is not allowed in global scope, must use a wrapper
 async function main(){
     // let transporter = nodemailer.createTransport({
@@ -23,16 +24,23 @@ async function main(){
     // },function(args){
     //     console.log(args);
     // });
-
-    let transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false, // true for 465, false for other ports
+    var transport = nodemailer.createTransport(smtpTransport({
+        service: 'gmail',
         auth: {
             user: "sandeepkr5495@gmail.com", // generated ethereal user
             pass: "Bcse1565"  // generated ethereal password
         }
-      });
+    }));
+
+    // let transporter = nodemailer.createTransport({
+    //     host: "smtp.gmail.com",
+    //     port: 465,
+    //     secure: true, // true for 465, false for other ports
+    //     auth: {
+    //         user: "sandeepkr5495@gmail.com", // generated ethereal user
+    //         pass: "Bcse1565"  // generated ethereal password
+    //     }
+    //   });
 
     module.exports = transporter;
     
