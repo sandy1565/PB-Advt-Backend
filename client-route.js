@@ -370,7 +370,7 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
 
                     let mailOptions = {
                         from: 'sandeepkr5495@gmail.com', // sender address
-                        to: "shubhamrawat.140@gmail.com", // list of receivers
+                        to: `${email_address}`, // list of receivers
                         subject: "Hello ✔", // Subject line
                         text: "Hello world?", // plain text body
                         html: `<h2>Hello ${clientUserName}</h2>
