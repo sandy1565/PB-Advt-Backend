@@ -2,6 +2,22 @@ var express = require('express');
 var router = express.Router();
 var connection = require('./db.connection');
 const authJwt = require('./auth/verifyToken');
+var transporter = require('./email-sender');
+
+
+router.get("/mail", async function(req,res){
+    let mailOptions = {
+        from: 'sandeepkr5495@gmail.com', // sender address
+        to: "shubhamrawat.140@gmail.com", // list of receivers
+        subject: "Hello ✔", // Subject line
+        text: "Hello world?", // plain text body
+        html: "<b>Hello world?</b>" // html body
+      };
+    
+      // send mail with defined transport object
+      let info = await transporter.sendMail(mailOptions);
+      res.send("success");
+});
 
 router.get("/", [authJwt.verifyToken], function (req, res) {
     const queryStr = 'select * from client_master where admin_user_name=?';
@@ -339,7 +355,7 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
                     admin_user_name: req.username,
                     profile_id,
                     document_id
-                }, function (err, result) {
+                }, async function (err, result) {
                     if (err) {
                         connection.query('delete from login where username = ?', [loginUsrName], function (err, result) {
 
@@ -351,6 +367,22 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
                         });
                         return;
                     }
+
+                    let mailOptions = {
+                        from: 'sandeepkr5495@gmail.com', // sender address
+                        to: "shubhamrawat.140@gmail.com", // list of receivers
+                        subject: "Hello ✔", // Subject line
+                        text: "Hello world?", // plain text body
+                        html: `<h2>Hello ${clientUserName}</h2>
+                        <p>Thanks For Connecting to Advertisment publish<br>
+                        Your user name is ${loginUsrName} and generated password is ${loginUsrPwd}
+                        </p>
+                        ` // html body
+                      };
+                    
+                      // send mail with defined transport object
+                      let info = await transporter.sendMail(mailOptions)
+                    
                     res.send({
                         message: 'Successfully added Client Record'
                     });
