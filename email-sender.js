@@ -24,7 +24,7 @@ async function main(){
     // },function(args){
     //     console.log(args);
     // });
-    var transport = nodemailer.createTransport(smtpTransport({
+    var transporter = nodemailer.createTransport(smtpTransport({
         service: 'gmail',
         auth: {
             user: "sandeepkr5495@gmail.com", // generated ethereal user
