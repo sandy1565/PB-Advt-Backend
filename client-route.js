@@ -379,10 +379,11 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
                         </p>
                         ` // html body
                       };
-                    
+                    console.log(mailOptions);
                       // send mail with defined transport object
                       try{
-                        let info = await transporter.sendMail(mailOptions)
+                        let info = await transporter.sendMail(mailOptions);
+                        console.log("info",info);
                       }
                       catch(e){
                         console.log(e);
