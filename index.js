@@ -312,12 +312,45 @@ app.get('/api/getClient', [authJwt.verifyToken], (req, res) => {
 
 ////////////////////////  get advt details  ///////////////////////////////
 
-app.get('/api/getAdvt', [authJwt.verifyToken], (req, res) => {
-    connection.query('select clientName, advt_details from client_master inner join advt_master on client_master.client_id= advt_master.client_id', (err, result) => {
+app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {  
+    var queryData = 'select client_id from client_master where admin_user_name = ?';
+    connection.query(queryData, [req.username], function(err, result) {
+        if(err) {
+            console.log(err);
+        }
+        else {
+            let validClientIds = result.map((item)=> {
+                console.log(item.client_id);
+                return item.client_id;
+            });
+
+    connection.query('select * from advt_master inner join client_master on  client_master.client_id = advt_master.client_id where client_master.client_id in (?)', [validClientIds],(err, result) => {
         if (err) throw err;
         else {
             ////console.log(result);
-            res.json(result)
+            res.send(result)
+        }
+    })
+        }
+    });
+    
+});
+
+app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
+    connection.query('select *, DATE_FORMAT(publish_date, "%Y-%m-%d") as publish_date from client_master inner join advt_master on client_master.client_id= advt_master.client_id where advt_master.advt_id = ?',[req.params.id], (err, result) => {
+        if (err) throw err;
+        else {
+            if(!result[0] || result[0].admin_user_name != req.username){
+                console.log(result, req.username);
+                res.status(401).send({
+                    message:"Invalid Request",
+                    data:result
+                })
+                return;
+            }
+            ////console.log(result);
+            res.json(
+                {data:result[0]})
         }
     })
 });
@@ -326,7 +359,7 @@ app.get('/api/getAdvt', [authJwt.verifyToken], (req, res) => {
 
 app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req, res) {
     var advtDetails = {
-        client_id: req.body.client_id,
+        client_id: req.body.client_id ,
         advt_subject: req.body.advt_subject,
         advt_details: req.body.advt_details,
         publish_date: req.body.publish_date,
@@ -363,14 +396,18 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
         username: req.body.username,
     }
 
-    var sql = "update advt_master set ? where id=" + req.params.id;
-    connection.query(sql, function (err, result) {
+    var sql = "update advt_master set ? where advt_id=" + req.params.id;
+    connection.query(sql,advtDetails, function (err, result) {
         if (err) {
             ////console.log(err);
-
+            console.log(err);
+            res.staus(401).send({
+                error:true,
+                message:'error updating record'
+            })
         }
         else {
-            res.send('Record has been updated');
+            res.send({message:'Record has been updated'});
         }
     });
 })
