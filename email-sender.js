@@ -1,55 +1,128 @@
-"use strict";
-const nodemailer = require("nodemailer");
-var smtpTransport = require('nodemailer-smtp-transport');
-// async..await is not allowed in global scope, must use a wrapper
-async function main(){
-    // let transporter = nodemailer.createTransport({
-    //     host: 'smtp.gmail.com',
-    //     port: 587,
-    //     secure: false,
-    //     auth: {
-    //         user: "sandeepkr5495@gmail.com", // generated ethereal user
-    //         pass: "Bcse1565"  // generated ethereal password
-    //     }
-        
-    // });
-    
-    
-    
-    //  transporter.sendMail({
-    //     from: 'sandeepkr5495@gmail.com',
-    //     to: 'shubhamrawat.140@gmail.com',
-    //     subject: 'Message',
-    //     text: 'I hope this message gets through!',
-    // },function(args){
-    //     console.log(args);
-    // });
-    var transporter = nodemailer.createTransport(smtpTransport({
-        service: 'gmail',
-        auth: {
-            user: "sandeepkr5495@gmail.com", // generated ethereal user
-            pass: "Bcse1565"  // generated ethereal password
-        }
-    }));
 
-    // let transporter = nodemailer.createTransport({
-    //     host: "smtp.gmail.com",
-    //     port: 465,
-    //     secure: true, // true for 465, false for other ports
-    //     auth: {
-    //         user: "sandeepkr5495@gmail.com", // generated ethereal user
-    //         pass: "Bcse1565"  // generated ethereal password
-    //     }
-    //   });
+const fs = require('fs');
+const readline = require('readline');
+const {google} = require('googleapis');
+const clientId = "513021573269-0aemi3qdomm9kt4i1oi7kpvaudsf50lr.apps.googleusercontent.com";
+const clientSecret = "LGzgaEv_SyhgEMpsnBn1D-Kb";
 
-    module.exports = transporter;
-    
+// If modifying these scopes, delete token.json.
+const SCOPES = ['https://www.googleapis.com/auth/gmail.send'];
+// The file token.json stores the user's access and refresh tokens, and is
+// created automatically when the authorization flow completes for the first
+// time.
+const TOKEN_PATH = 'token.json';
+let gmail;
+let authConst;
+const key = "4/-QA0ZX4_KoDIlkNZpQ1l7gBxTH9GwpadTwOk8_EAMBHw3ZEFsMtPu7E";
 
-    
+// Load client secrets from a local file.
+fs.readFile('credentials.json', (err, content) => {
+  if (err) return console.log('Error loading client secret file:', err);
+  // Authorize a client with credentials, then call the Gmail API.
+  authorize(JSON.parse(content), listLabels);
+});
 
+/**
+ * Create an OAuth2 client with the given credentials, and then execute the
+ * given callback function.
+ * @param {Object} credentials The authorization client credentials.
+ * @param {function} callback The callback to call with the authorized client.
+ */
+function authorize(credentials, callback) {
+  const {client_secret, client_id, redirect_uris} = credentials.installed;
+  const oAuth2Client = new google.auth.OAuth2(
+      client_id, client_secret, redirect_uris[0]);
+
+  // Check if we have previously stored a token.
+  fs.readFile(TOKEN_PATH, (err, token) => {
+    if (err) return getNewToken(oAuth2Client, callback);
+    oAuth2Client.setCredentials(JSON.parse(token));
+    callback(oAuth2Client);
+  });
 }
 
-main().catch(console.error);
+/**
+ * Get and store new token after prompting for user authorization, and then
+ * execute the given callback with the authorized OAuth2 client.
+ * @param {google.auth.OAuth2} oAuth2Client The OAuth2 client to get token for.
+ * @param {getEventsCallback} callback The callback for the authorized client.
+ */
+function getNewToken(oAuth2Client, callback) {
+  const authUrl = oAuth2Client.generateAuthUrl({
+    access_type: 'offline',
+    scope: SCOPES,
+  });
+  console.log('Authorize this app by visiting this url:', authUrl);
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  rl.question('Enter the code from that page here: ', (code) => {
+    rl.close();
+    oAuth2Client.getToken(code, (err, token) => {
+      if (err) return console.error('Error retrieving access token', err);
+      oAuth2Client.setCredentials(token);
+      // Store the token to disk for later program executions
+      fs.writeFile(TOKEN_PATH, JSON.stringify(token), (err) => {
+        if (err) return console.error(err);
+        console.log('Token stored to', TOKEN_PATH);
+      });
+      callback(oAuth2Client);
+    });
+  });
+}
+
+/**
+ * Lists the labels in the user's account.
+ *
+ * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
+ */
+function listLabels(auth) {
+  authConst = auth;
+  gmail = google.gmail({version: 'v1', auth});
+//   gmail.users.labels.list({
+//     userId: 'me',
+//   }, (err, res) => {
+//     if (err) return console.log('The API returned an error: ' + err);
+//     const labels = res.data.labels;
+//     if (labels.length) {
+//       console.log('Labels:');
+//       labels.forEach((label) => {
+//         console.log(`- ${label.name}`);
+//       });
+//     } else {
+//       console.log('No labels found.');
+//     }
+//   });
+}
+function makeBody(to, from, subject, message) {
+    var str = ["Content-Type: text/plain; charset=\"UTF-8\"\n",
+        "MIME-Version: 1.0\n",
+        "Content-Transfer-Encoding: 7bit\n",
+        "to: ", to, "\n",
+        "from: ", from, "\n",
+        "subject: ", subject, "\n\n",
+        message
+    ].join('');
+
+    var encodedMail = new Buffer(str).toString("base64").replace(/\+/g, '-').replace(/\//g, '_');
+        return encodedMail;
+}
 
 
+module.exports = function sendMessage(to,subject,message, callback){
+   
+    var raw = makeBody(to, 'sandeepkr5495@gmail.com', subject, message);
+    gmail.users.messages.send({
+        auth: authConst,
+        userId: 'me',
+        resource: {
+            raw: raw
+        }
+    }, function(err, response) {
+       callback(err,response);
+       
+        // res.send(err || response)
+    });
+}
 

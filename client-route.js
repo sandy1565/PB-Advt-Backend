@@ -2,7 +2,7 @@ var express = require('express');
 var router = express.Router();
 var connection = require('./db.connection');
 const authJwt = require('./auth/verifyToken');
-var transporter = require('./email-sender');
+var sendMessage = require('./email-sender');
 
 
 router.get("/mail", async function(req,res){
@@ -15,8 +15,14 @@ router.get("/mail", async function(req,res){
       };
     
       // send mail with defined transport object
-      let info = await transporter.sendMail(mailOptions);
-      res.send("success");
+      sendMessage(mailOptions.to,mailOptions.subject,mailOptions.html,function(err,response){
+          if(err){
+            res.send(err);
+          }
+          else{
+            res.send("success");
+          }
+      });
 });
 
 router.get("/", [authJwt.verifyToken], function (req, res) {
@@ -382,16 +388,22 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
                     console.log(mailOptions);
                       // send mail with defined transport object
                       try{
-                        let info = await transporter.sendMail(mailOptions);
-                        console.log("info",info);
+                        sendMessage(mailOptions.to,mailOptions.subject,mailOptions.html,function(err,response){
+                            if(err){
+                              res.send(err);
+                            }
+                            else{
+                                res.send({
+                                    message: 'Successfully added Client Record'
+                                });
+                            }
+                        });
                       }
                       catch(e){
-                        console.log(e);
+                        res.send(e);
                       }
                     
-                    res.send({
-                        message: 'Successfully added Client Record'
-                    });
+                    
                 });
 
             }
