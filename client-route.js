@@ -379,10 +379,9 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
                         to: `${email_address}`, // list of receivers
                         subject: "Hello ✔", // Subject line
                         text: "Hello world?", // plain text body
-                        html: `<h2>Hello ${client_name}</h2>
-                        <p>Thanks For Connecting to Advertisment publish<br>
+                        html: `
                         Your user name is ${loginUsrName} and generated password is ${loginUsrPwd}
-                        </p>
+                        
                         ` // html body
                       };
                     console.log(mailOptions);
