@@ -2,6 +2,7 @@ var connection = require('./db.connection');
 const express = require('express');
 var app = express();
 var cors = require('cors');
+var sendMessage = require('./email-sender');
 app.use(cors());
 const route = express.Router;
 var bodyParser = require('body-parser');
@@ -11,7 +12,62 @@ var jwt = require('jsonwebtoken');
 const config = require('./config');
 const authJwt = require('./auth/verifyToken');
 var clientRouter  = require('./client-route');
-
+var cron = require('node-cron');
+let d = 0;
+cron.schedule('0 5 18 * * *', () => {
+  console.log('running every minute 1, 2, 4 and 5');
+  const allAdvrtQuery = `select * from advt_master`;
+  let today = new Date();
+  connection.query(allAdvrtQuery,function(err,results){
+    if(err || !results[0]){
+        console.log("1",err);
+        return;
+    }
+    // console.log("results",results)
+    let allAdverts = results;
+    const personsQuery =   `select * from person_master`;
+    connection.query(personsQuery,function(err,results){
+        if(err || !results[0]){
+            console.log("2",err);
+            return;
+        }
+        let allPersons = results;
+        // console.log(allPersons);
+        allAdverts.forEach(advert=>{
+            let publishDate = new Date(advert.publish_date);
+            let allEmails = [];
+            if(publishDate.getDate() == today.getDate() && 
+            publishDate.getMonth() == today.getMonth() && 
+            publishDate.getFullYear() == today.getFullYear()){
+                    let selectedPersons = allPersons.filter(person=>{
+                        
+                        return (
+                            advert.age_from <= person.age && person.age <= advert.age_to
+                        );
+                    });    
+                    selectedPersons.forEach(person=>{
+                        if(person.email_id){
+                            allEmails.push(person.email_id);
+                        }
+                    });
+                    if(allEmails.length){
+                        sendMessage(allEmails.join(","),advert.advt_subject,advert.advt_details,function(err){
+                            if(err){
+                               
+                                return;
+                            }
+                            console.log("SENT MESSAGES");
+                        });
+                    }
+                     
+            }
+        });
+    });
+  });
+},{
+    scheduled: true,
+    timezone: "Asia/Kolkata"
+  });
 connection.connect((err) => {
     if (err) {
         throw err;
