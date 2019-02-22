@@ -15,7 +15,13 @@ router.get("/mail", async function(req,res){
       };
     
       // send mail with defined transport object
-      let info = await transporter.sendMail(mailOptions);
+      try{
+        let info = await transporter.sendMail(mailOptions);
+      }catch(e){
+          res.send(e);
+          return;
+      }
+      
       res.send("success");
 });
 
