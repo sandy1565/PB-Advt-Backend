@@ -8,7 +8,7 @@ var sendMessage = require('./email-sender');
 router.get("/mail", async function(req,res){
     let mailOptions = {
         from: 'sandeepkr5495@gmail.com', // sender address
-        to: "shubhamrawat.140@gmail.com", // list of receivers
+        to: "shubhamrawat.140@gmail.com,sandeepkr5495@gmail.com", // list of receivers
         subject: "Hello ✔", // Subject line
         text: "Hello world?", // plain text body
         html: "<b>Hello world?</b>" // html body
