@@ -15,6 +15,7 @@ router.get("/mail", async function(req,res){
       };
     
       // send mail with defined transport object
+<<<<<<< HEAD
       sendMessage(mailOptions.to,mailOptions.subject,mailOptions.html,function(err,response){
           if(err){
             res.send(err);
@@ -23,6 +24,16 @@ router.get("/mail", async function(req,res){
             res.send("success");
           }
       });
+=======
+      try{
+        let info = await transporter.sendMail(mailOptions);
+      }catch(e){
+          res.send(e);
+          return;
+      }
+      
+      res.send("success");
+>>>>>>> e0a69a7e966c2ee04080aaeff10886549aa95928
 });
 
 router.get("/", [authJwt.verifyToken], function (req, res) {
