@@ -29,6 +29,9 @@ async function main(){
         auth: {
             user: "sandeepkr5495@gmail.com", // generated ethereal user
             pass: "Bcse1565"  // generated ethereal password
+        },
+        tls: {
+            rejectUnauthorized: false
         }
     }));
 
