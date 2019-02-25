@@ -260,33 +260,22 @@ app.get('/api/getPersonData/:id', [authJwt.verifyToken], (req, res) => {
     connection.query('select *, DATE_FORMAT(date_of_birth, "%Y-%m-%d") as date_of_birth from person_master where person_master.person_id = ?', [req.params.id], (err, result) => {
         if (err) throw err;
         else {
+            let data ;
+            if(result[0]){
+                data = result[0];
+                data.firstname = encryption.decrypt(data.firstname);
+                data.middlename = encryption.decrypt(data.middlename);
+                data.lastname = encryption.decrypt(data.lastname);
+                data.address = encryption.decrypt(data.address);
+                data.gender = encryption.decrypt(data.gender);
+                data.mobile_number1 = encryption.decrypt(data.mobile_number1);
+                data.mobile_number2 = encryption.decrypt(data.mobile_number2);
+            }
             res.json(
-                { data: result[0] })
+                { data })
         }
     })
 });
-
-//////////////////////// get person ///////////////////////////////////////
-
-// app.get('/api/getPerson', (req, res) => {
-//     var person_id = req.body.person_id; 
-//     connection.query(`SELECT country_master.country_name, country_master.country_id,person_master.firstname, 
-//         person_master.lastname, person_master.middlename, person_master.date_of_birth, person_master.mobile_number1,
-//         person_master.gender, person_master.address, person_master.pincode,
-//         state_master.state_id, state_master.statename, city_master.city_id, city_master.cityname
-//         FROM  country_master
-//         LEFT JOIN person_master ON country_master.country_id = person_master.country_id
-//         left join state_master ON person_master.state_id = state_master.state_id
-//         left join city_master ON person_master.city_id = city_master.city_id
-//         where person_master.person_id = ?`,[person_id], (err, result) => {
-//             // ////console.log(result);
-//         if (err) throw err;
-//         else {
-//             ////console.log("Result is here: ",result);
-//             res.json(result)
-//         }
-//     })
-// });
 
 ///////////////// post person ///////////////////
 
@@ -342,62 +331,19 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
     });
 });
 
-app.post('/api/advtPersonNew', urlencodedParser, function (req, res) {
-    var personDetails = {
-        firstname: encryption.encrypt(req.body.firstname),
-        middlename: encryption.encrypt(req.body.middlename),
-        lastname: encryption.encrypt(req.body.lastname),
-        country_id: req.body.country_id,
-        state_id: req.body.state_id,
-        city_id: req.body.city_id,
-        block_id: req.body.block_id,
-        address: encryption.encrypt(req.body.address),
-        floor_id: req.body.floor_id,
-        location_id: req.body.location_id,
-        date_of_birth: req.body.date_of_birth,
-        pincode: req.body.pincode,
-        gender: encryption.encrypt(req.body.gender),
-        mobile_number1: encryption.encrypt(req.body.mobile_number1),
-        mobile_number2: encryption.encrypt(req.body.mobile_number2),
-        username: req.username,
-        creation_date: req.body.creation_date
-    }
-    // ////console.log(req.body);
-    var mobileNumberValidation = 'select COUNT(*) AS count from person_master WHERE mobile_number1 = ?'
-    connection.query(mobileNumberValidation, [personDetails.mobile_number1], function (err, rows) {
-        ////console.log(rows);
-        const count = rows[0].count;
-        ////console.log(count);        
-        if (count > 0) {
-            res.json({
-                status: 401,
-                message: "Given Mobile Number is Registered. Please provide another number."
-            });
-            }
-            else {
-            connection.query("INSERT INTO person_master SET ?", personDetails, function (err, result) {
-                if(err) {
-                    res.status(401).send({
-                        message:err
-                    })
-                }
-                else {
-                res.json({
-                    status: 200,
-                });
-                // res.send(result);
-            }
-            });
-        }
-    });
-});
-
 ///////update person//////////////
 
 app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser, function (req, res) {
     var query = "update person_master SET firstname=?,middlename=?,lastname=?, block_id=?, address=?, floor_id=?, location_id=?, date_of_birth=?, pincode=?, mobile_number1=?, mobile_number2=?, gender=? WHERE person_id=?";
     ////console.log('query --- ', query);
-    connection.query(query, [req.body.firstname, req.body.middlename, req.body.lastname, req.block_id, req.address, req.floor_id, req.location_id, req.date_of_birth, req.pincode, req.mobile_number1, req.mobile_number2, req.gende, req.body.person_id], function (err, result) {
+    connection.query(query, [encryption.encrypt(req.body.firstname), encryption.encrypt(req.body.middlename),
+         encryption.encrypt(req.body.lastname), req.block_id, req.address, req.floor_id, req.location_id, 
+         req.date_of_birth, 
+         req.pincode, 
+         encryption.encrypt(req.mobile_number1), 
+         encryption.encrypt(req.mobile_number2),
+          encryption.encrypt(req.gender),
+          req.body.person_id], function (err, result) {
         if (err) {
             res.json({
                 status: 400,
@@ -430,21 +376,6 @@ app.delete('/api/deletePerson/:id', [authJwt.verifyToken], function (req, res) {
 })
 
 
-
-
-///////////////// get client ///////////////////
-
-app.get('/api/getClient', [authJwt.verifyToken], (req, res) => {
-    connection.query('select * from client_master', (err, result) => {
-        if (err) throw err;
-        else {
-            // ////console.log(result);
-            res.json(result)
-        }
-    })
-});
-
-
 ////////////////////////  get advt details  ///////////////////////////////
 
 app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
@@ -463,6 +394,16 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
                 if (err) throw err;
                 else {
                     ////console.log(result);
+                    if(result){
+                        result = result.map(item=>{
+                            return (
+                                {...item,
+                                advt_subject: encryption.decrypt(item.advt_subject),
+                                advt_details: encryption.decrypt(item.advt_details),
+                                }
+                            );
+                        })
+                    }
                     res.send(result)
                 }
             })
@@ -484,6 +425,11 @@ app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
                 return;
             }
             ////console.log(result);
+            let data = result[0];
+            if(data){
+                data.advt_subject=  encryption.decrypt(data.advt_subject);
+                data.advt_details= encryption.decrypt(data.advt_details);
+            }
             res.json(
                 { data: result[0] })
         }
@@ -495,8 +441,8 @@ app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
 app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req, res) {
     var advtDetails = {
         client_id: req.body.client_id,
-        advt_subject: req.body.advt_subject,
-        advt_details: req.body.advt_details,
+        advt_subject: encryption.encrypt(req.body.advt_subject),
+        advt_details: encryption.encrypt(req.body.advt_details),
         publish_date: req.body.publish_date,
         country_id: req.body.country_id,
         state_id: req.body.state_id,
@@ -523,8 +469,8 @@ app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req,
 app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function (req, res) {
     var advtDetails = {
         client_id: req.body.client_id,
-        advt_subject: req.body.advt_subject,
-        advt_details: req.body.advt_details,
+        advt_subject: encryption.encrypt(req.body.advt_subject),
+        advt_details: encryption.encrypt(req.body.advt_details),
         publish_date: req.body.publish_date,
         age_from: req.body.age_from,
         age_to: req.body.age_to,
@@ -626,21 +572,6 @@ app.post('/api/login', urlencodedParser, function (req, res) {
 
 })
 
-///////////////////////client////////////////////////////
-
-app.get('/api/getClient', [authJwt.verifyToken], function (req, res) {
-    connection.query('SELECT * FROM client_master', function (error, rows) {
-        if (error) {
-            ////console.log('Error  y')
-        }
-        else {
-            ////console.log('Successful query')
-            ////console.log(rows);
-            // res.send('Hello ' +rows[1].firstname);
-            res.json(rows);
-        }
-    })
-});
 
 ///////////////////advt-publish/////////////
 ////////////get//////////////////////
@@ -649,6 +580,15 @@ app.get('/api/getPublish', [authJwt.verifyToken], (req, res) => {
     connection.query('select messages_to_all, age_group from advt_publish', (err, rows) => {
         if (err) throw err;
         else {
+            if(rows){
+            rows = rows.map(row=>{
+                return {
+                    ...row,
+                    gender:encryption.encrypt(row.gender),
+                    text_message:encryption.encrypt(row.text_message)
+                }
+            })
+            }
             res.json(rows);
         }
     })
@@ -666,7 +606,7 @@ app.post('/api/advtPublish', [authJwt.verifyToken], urlencodedParser, function (
         ////console.log('==================', req.body.text_message);
 
         var publishDetails = {
-            gender: req.body.gender,
+            gender: encryption.encrypt(req.body.gender),
             country_id: req.body.country_id,
             state_id: req.body.state_id,
             city_id: req.body.city_id,
@@ -674,7 +614,7 @@ app.post('/api/advtPublish', [authJwt.verifyToken], urlencodedParser, function (
             block_id: req.body.block_id,
             from_age: req.body.fromAge,
             to_age: req.body.toAge,
-            text_message: req.body.text_message
+            text_message: encryption.encrypt(req.body.text_message)
             // username: 'sandeep'
         }
         var insertQuery = 'INSERT INTO greattug_advt_publish.advt_details SET ?';
