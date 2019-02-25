@@ -3,6 +3,7 @@ var router = express.Router();
 var connection = require('./db.connection');
 const authJwt = require('./auth/verifyToken');
 var sendMessage = require('./email-sender');
+const encryption = require("./encryption");
 
 
 router.get("/mail", async function(req,res){
@@ -35,6 +36,16 @@ router.get("/", [authJwt.verifyToken], function (req, res) {
                 message: "No Client records Found"
             });
             return;
+        }
+        if(rows){
+            rows = rows.map(record=>{
+                record.client_name = encryption.decrypt(record.client_name);
+                record.phone_number = encryption.decrypt(record.phone_number);
+                record.gst_number = encryption.decrypt(record.gst_number);
+                record.representative_name = encryption.decrypt(record.representative_name);
+                record.registration_details = encryption.decrypt(record.registration_details);
+                return record;
+            })
         }
         res.send({
             data: rows,
@@ -111,6 +122,13 @@ router.get("/:client_id", [authJwt.verifyToken], function (req, res) {
             if (document_data) {
                 record.document_file = document_data.file_data;
             }
+        }
+        if(record){
+            record.client_name = encryption.decrypt(record.client_name);
+            record.phone_number = encryption.decrypt(record.phone_number);
+            record.gst_number = encryption.decrypt(record.gst_number);
+            record.representative_name = encryption.decrypt(record.representative_name);
+            record.registration_details = encryption.decrypt(record.registration_details);
         }
         res.send({
             data: record,
@@ -193,11 +211,11 @@ router.put("/:client_id", [authJwt.verifyToken], function (req, res) {
             }
 
             let dataToSave = {
-                client_name, country_id, state_id,
+                client_name:encryption.encrypt(client_name), country_id, state_id,
                 city_id, location_id, block_id,
-                gst_number, representative_name,
-                representative_id, phone_number,
-                registration_details,
+                gst_number:encryption.encrypt(gst_number), representative_name:encryption.encrypt(representative_name),
+                representative_id, phone_number:encryption.encrypt(phone_number),
+                registration_details:encryption.encrypt(registration_details),
                 firm_type,
             }
             if (profile_id) {
@@ -351,11 +369,11 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
 
 
                 connection.query(insertRecordToClientMaster, {
-                    client_name, country_id, state_id,
+                    client_name:encryption.encrypt(client_name), country_id, state_id,
                     city_id, location_id, block_id,
-                    gst_number, representative_name,
-                    representative_id, phone_number,
-                    email_address, registration_details,
+                    gst_number:encryption.encrypt(gst_number), representative_name:encryption.encrypt(representative_name),
+                    representative_id, phone_number:encryption.encrypt(phone_number),
+                    email_address, registration_details:encryption.encrypt(registration_details),
                     user_name: loginUsrName,
                     firm_type,
                     admin_user_name: req.username,
