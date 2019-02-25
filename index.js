@@ -281,9 +281,9 @@ app.get('/api/getPersonData/:id', [authJwt.verifyToken], (req, res) => {
 
 app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (req, res) {
     var personDetails = {
-        firstname: req.body.firstname,
-        middlename: req.body.middlename,
-        lastname: req.body.lastname,
+        firstname: encryption.encrypt(req.body.firstname),
+        middlename: encryption.encrypt(req.body.middlename),
+        lastname: encryption.encrypt(req.body.lastname),
         country_id: req.body.country_id,
         state_id: req.body.state_id,
         city_id: req.body.city_id,
@@ -310,6 +310,8 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
                 status: 401,
                 message: "Given Mobile Number is Registered. Please provide another number."
             });
+            }
+            else {
             connection.query("INSERT INTO person_master SET ?", personDetails, function (err, result) {
                 if(err) {
                     res.status(401).send({
