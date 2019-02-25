@@ -261,8 +261,8 @@ app.get('/api/getPersonData/:id', [authJwt.verifyToken], (req, res) => {
     connection.query('select *, DATE_FORMAT(date_of_birth, "%Y-%m-%d") as date_of_birth from person_master where person_master.person_id = ?', [req.params.id], (err, result) => {
         if (err) throw err;
         else {
-            let data ;
-            if(result[0]){
+            let data;
+            if (result[0]) {
                 data = result[0];
                 data.firstname = encryption.decrypt(data.firstname);
                 data.middlename = encryption.decrypt(data.middlename);
@@ -285,7 +285,7 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
         firstname: encryption.encrypt(req.body.firstname),
         middlename: encryption.encrypt(req.body.middlename),
         lastname: encryption.encrypt(req.body.lastname),
-        country_id:req.body.country_id, 
+        country_id: req.body.country_id,
         state_id: req.body.state_id,
         city_id: req.body.city_id,
         block_id: req.body.block_id,
@@ -306,7 +306,7 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
         ////console.log(rows);
         const count = rows[0].count;
         ////console.log(count);        
-        if(count > 0) {
+        if (count > 0) {
             res.json({
                 status: 401,
                 message: "Given Mobile Number is Registered. Please provide another number."
@@ -314,18 +314,18 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
             ////console.log("Please Provide another number");
         }
         else {
-            connection.query("INSERT INTO person_master SET ?", personDetails, function(err, result) {
-                if(err) {
+            connection.query("INSERT INTO person_master SET ?", personDetails, function (err, result) {
+                if (err) {
                     res.json({
                         message: err
                     })
                 }
                 else {
-                res.json({
-                    status: 200,
-                    message: "success"
-                });
-            }
+                    res.json({
+                        status: 200,
+                        message: "success"
+                    });
+                }
             });
         }
         // res.send(this.firstname);
@@ -335,16 +335,39 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
 ///////update person//////////////
 
 app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser, function (req, res) {
-    var query = "update person_master SET firstname=?,middlename=?,lastname=?, block_id=?, address=?, floor_id=?, location_id=?, date_of_birth=?, pincode=?, mobile_number1=?, mobile_number2=?, gender=? WHERE person_id=?";
+    var query = `update person_master SET 
+    firstname=?,
+    middlename=?,
+    lastname=?,
+    country_id=?,
+    state_id=?,
+    city_id=?,
+    location_id=?,
+    block_id=?,
+    floor_id=?,
+    address=?,
+    pincode=?,
+    date_of_birth=?,
+    gender=?,
+    mobile_number1=?,
+    mobile_number2=? WHERE person_id=?`;
     ////console.log('query --- ', query);
-    connection.query(query, [encryption.encrypt(req.body.firstname), encryption.encrypt(req.body.middlename),
-         encryption.encrypt(req.body.lastname), req.block_id, req.address, req.floor_id, req.location_id, 
-         req.date_of_birth, 
-         req.pincode, 
-         encryption.encrypt(req.mobile_number1), 
-         encryption.encrypt(req.mobile_number2),
-          encryption.encrypt(req.gender),
-          req.body.person_id], function (err, result) {
+    connection.query(query, [
+        encryption.encrypt(req.body.firstname), encryption.encrypt(req.body.middlename),
+    encryption.encrypt(req.body.lastname),
+    req.body.country_id,
+    req.body.state_id,
+    req.body.city_id,
+    req.body.location_id,
+    req.body.block_id,
+    req.body.floor_id,
+    encryption.encrypt(req.body.address),
+    req.body.pincode,
+    req.body.date_of_birth,
+    encryption.encrypt(req.body.gender),
+    encryption.encrypt(req.body.mobile_number1),
+    encryption.encrypt(req.body.mobile_number2),
+    req.params.person_id], function (err, result) {
         if (err) {
             res.json({
                 status: 400,
@@ -395,12 +418,13 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
                 if (err) throw err;
                 else {
                     ////console.log(result);
-                    if(result){
-                        result = result.map(item=>{
+                    if (result) {
+                        result = result.map(item => {
                             return (
-                                {...item,
-                                advt_subject: encryption.decrypt(item.advt_subject),
-                                advt_details: encryption.decrypt(item.advt_details),
+                                {
+                                    ...item,
+                                    advt_subject: encryption.decrypt(item.advt_subject),
+                                    advt_details: encryption.decrypt(item.advt_details),
                                 }
                             );
                         })
@@ -427,9 +451,9 @@ app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
             }
             ////console.log(result);
             let data = result[0];
-            if(data){
-                data.advt_subject=  encryption.decrypt(data.advt_subject);
-                data.advt_details= encryption.decrypt(data.advt_details);
+            if (data) {
+                data.advt_subject = encryption.decrypt(data.advt_subject);
+                data.advt_details = encryption.decrypt(data.advt_details);
             }
             res.json(
                 { data: result[0] })
@@ -581,14 +605,14 @@ app.get('/api/getPublish', [authJwt.verifyToken], (req, res) => {
     connection.query('select messages_to_all, age_group from advt_publish', (err, rows) => {
         if (err) throw err;
         else {
-            if(rows){
-            rows = rows.map(row=>{
-                return {
-                    ...row,
-                    gender:encryption.encrypt(row.gender),
-                    text_message:encryption.encrypt(row.text_message)
-                }
-            })
+            if (rows) {
+                rows = rows.map(row => {
+                    return {
+                        ...row,
+                        gender: encryption.encrypt(row.gender),
+                        text_message: encryption.encrypt(row.text_message)
+                    }
+                })
             }
             res.json(rows);
         }
