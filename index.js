@@ -16,6 +16,13 @@ var clientRouter = require('./client-route');
 var cron = require('node-cron');
 let d = 0;
 cronJob('0 5 18 * * *');
+
+
+function cronJob(timePattern){
+var clientRouter = require('./client-route');
+var cron = require('node-cron');
+let d = 0;
+cronJob('0 5 18 * * *');
 function cronJob(timePattern) {
     cron.schedule(timePattern, () => {
         const allAdvrtQuery = `select * from advt_master`;
@@ -234,7 +241,6 @@ app.get('/api/getFloor', [authJwt.verifyToken], (req, res) => {
 // Get all person 
 app.get('/api/getPerson', [authJwt.verifyToken], (req, res) => {
     connection.query('SELECT *, DATE_FORMAT(date_of_birth, "%d %m %Y") as date_of_birth FROM greattug_advt_publish.person_master', (err, result) => {
-        // ////console.log(pid)
         if (err) throw err;
         else {
             res.json(result)
@@ -244,11 +250,11 @@ app.get('/api/getPerson', [authJwt.verifyToken], (req, res) => {
 
 /* get Person AS PER person_id*/
 app.get('/api/getPersonData/:id', [authJwt.verifyToken], (req, res) => {
-    connection.query('select *, DATE_FORMAT(date_of_birth, "%Y-%m-%d") as date_of_birth from person_master where person_master.person_id = ?',[req.params.id], (err, result) => {
+    connection.query('select *, DATE_FORMAT(date_of_birth, "%Y-%m-%d") as date_of_birth from person_master where person_master.person_id = ?', [req.params.id], (err, result) => {
         if (err) throw err;
         else {
             res.json(
-                {data:result[0]})
+                { data: result[0] })
         }
     })
 });
@@ -294,55 +300,7 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
         gender: encryption.encrypt(req.body.gender),
         mobile_number1: encryption.encrypt(req.body.mobile_number1),
         mobile_number2: encryption.encrypt(req.body.mobile_number2),
-        username: encryption.encrypt('akash'),
-        creation_date: req.body.creation_date
-    }
-    // ////console.log(req.body);
-    var mobileNumberValidation = 'select COUNT(*) AS count from person_master WHERE mobile_number1 = ?'
-    connection.query(mobileNumberValidation, [personDetails.mobile_number1], function (err, rows) {
-        ////console.log(rows);
-        const count = rows[0].count;
-        ////console.log(count);        
-        if (count > 0) {
-            res.json({
-                status: 401,
-                message: "Given Mobile Number is Registered. Please provide another number."
-            });
-            ////console.log("Please Provide another number");
-        }
-        else {
-            
-            connection.query("INSERT INTO person_master SET ?", personDetails, function(err, result) {
-                ////console.log("result : ", result);
-                res.json({
-                    status: 200,
-                    message: "success"
-                });
-            });
-        }
-        // res.send(this.firstname);
-    });
-});
-
-app.post('/api/advtPersonNew', urlencodedParser, function (req, res) {
-    var personDetails = {
-        firstname: encryption.encrypt(req.body.firstname),
-        // firstname: req.body.firstname,
-        middlename: encryption.encrypt(req.body.middlename),
-        lastname: encryption.encrypt(req.body.lastname),
-        country_id: req.body.country_id,
-        state_id: req.body.state_id,
-        city_id: req.body.city_id,
-        block_id: req.body.block_id,
-        address: encryption.encrypt(req.body.address),
-        floor_id: req.body.floor_id,
-        location_id: req.body.location_id,
-        date_of_birth: req.body.date_of_birth,
-        pincode: req.body.pincode,
-        gender: encryption.encrypt(req.body.gender),
-        mobile_number1: encryption.encrypt(req.body.mobile_number1),
-        mobile_number2: encryption.encrypt(req.body.mobile_number2),
-        username: encryption.encrypt('akash'),
+        username: req.username,
         creation_date: req.body.creation_date
     }
     // ////console.log(req.body);
@@ -357,11 +315,17 @@ app.post('/api/advtPersonNew', urlencodedParser, function (req, res) {
                 message: "Given Mobile Number is Registered. Please provide another number."
             });
             connection.query("INSERT INTO person_master SET ?", personDetails, function (err, result) {
-                ////console.log("result : ", result);
+                if(err) {
+                    res.status(401).send({
+                        message:err
+                    })
+                }
+                else {
                 res.json({
                     status: 200,
-                    message: "success"
                 });
+                // res.send(result);
+            }
             });
         }
     });
@@ -424,41 +388,25 @@ app.get('/api/getClient', [authJwt.verifyToken], (req, res) => {
 
 app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
     var queryData = 'select client_id from client_master where admin_user_name = ?';
-    if (req.type_of_user != 'CLIENT') {
-        connection.query(queryData, [req.username], function (err, result) {
-            if (err) {
-                console.log(err);
-            }
-            else {
-                let validClientIds = result.map((item) => {
-                    console.log(item.client_id);
-                    return item.client_id;
-                });
-                console.log("validClientds", validClientIds);
-                if (!validClientIds.length) {
-                    res.send([]);
-                    return;
-                }
-                connection.query('select * from advt_master inner join client_master on  client_master.client_id = advt_master.client_id where client_master.client_id in (?)', [validClientIds], (err, result) => {
-                    if (err) throw err;
-                    else {
-                        ////console.log(result);
-                        res.send(result)
-                    }
-                })
-            }
-        });
-    }
-    else{
-        connection.query('select * from advt_master inner join client_master on  client_master.client_id = advt_master.client_id where client_master.user_name = ?', [req.username], (err, result) => {
-            if (err) throw err;
-            else {
-                ////console.log(result);
-                res.send(result)
-            }
-        })
-    }
+    connection.query(queryData, [req.username], function (err, result) {
+        if (err) {
+            console.log(err);
+        }
+        else {
+            let validClientIds = result.map((item) => {
+                console.log(item.client_id);
+                return item.client_id;
+            });
 
+            connection.query('select * from advt_master inner join client_master on  client_master.client_id = advt_master.client_id where client_master.client_id in (?)', [validClientIds], (err, result) => {
+                if (err) throw err;
+                else {
+                    ////console.log(result);
+                    res.send(result)
+                }
+            })
+        }
+    });
 
 });
 
@@ -679,7 +627,7 @@ app.post('/api/advtPublish', [authJwt.verifyToken], urlencodedParser, function (
         // res.send('successful');
     });
 })
-
+};
 
 
 
