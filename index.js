@@ -284,6 +284,53 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
         firstname: encryption.encrypt(req.body.firstname),
         middlename: encryption.encrypt(req.body.middlename),
         lastname: encryption.encrypt(req.body.lastname),
+        country_id:req.body.country_id, 
+        state_id: req.body.state_id,
+        city_id: req.body.city_id,
+        block_id: req.body.block_id,
+        address: encryption.encrypt(req.body.address),
+        floor_id: req.body.floor_id,
+        location_id: req.body.location_id,
+        date_of_birth: req.body.date_of_birth,
+        pincode: req.body.pincode,
+        gender: encryption.encrypt(req.body.gender),
+        mobile_number1: encryption.encrypt(req.body.mobile_number1),
+        mobile_number2: encryption.encrypt(req.body.mobile_number2),
+        username: encryption.encrypt('akash'),
+        creation_date: req.body.creation_date
+    }
+    // ////console.log(req.body);
+    var mobileNumberValidation = 'select COUNT(*) AS count from person_master WHERE mobile_number1 = ?'
+    connection.query(mobileNumberValidation, [personDetails.mobile_number1], function (err, rows) {
+        ////console.log(rows);
+        const count = rows[0].count;
+        ////console.log(count);        
+        if(count > 0) {
+            res.json({
+                status: 401,
+                message: "Given Mobile Number is Registered. Please provide another number."
+            });
+            ////console.log("Please Provide another number");
+        }
+        else {
+            
+            connection.query("INSERT INTO person_master SET ?", personDetails, function(err, result) {
+                ////console.log("result : ", result);
+                res.json({
+                    status: 200,
+                    message: "success"
+                });
+            });
+        }
+        // res.send(this.firstname);
+    });
+});
+
+app.post('/api/advtPersonNew', urlencodedParser, function (req, res) {
+    var personDetails = {
+        firstname: encryption.encrypt(req.body.firstname),
+        middlename: encryption.encrypt(req.body.middlename),
+        lastname: encryption.encrypt(req.body.lastname),
         country_id: req.body.country_id,
         state_id: req.body.state_id,
         city_id: req.body.city_id,
