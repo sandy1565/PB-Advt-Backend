@@ -7,6 +7,7 @@ var sendMessage = require('./email-sender');
 app.use(cors());
 const route = express.Router;
 var bodyParser = require('body-parser');
+const encryption = require('./encryption');
 var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
 app.use(bodyParser.json({ limit: '10mb' }));
 var jwt = require('jsonwebtoken');
