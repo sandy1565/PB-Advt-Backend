@@ -7,72 +7,68 @@ var sendMessage = require('./email-sender');
 app.use(cors());
 const route = express.Router;
 var bodyParser = require('body-parser');
-var urlencodedParser = bodyParser.urlencoded({ extended: false ,parameterLimit: 100000, limit:'10mb'});
-app.use(bodyParser.json( {limit: '10mb'}));
+var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
+app.use(bodyParser.json({ limit: '10mb' }));
 var jwt = require('jsonwebtoken');
 const config = require('./config');
 const authJwt = require('./auth/verifyToken');
-var clientRouter  = require('./client-route');
-const encryption = require('./encryption');
+var clientRouter = require('./client-route');
 var cron = require('node-cron');
 let d = 0;
 cronJob('0 5 18 * * *');
-
-
-
-function cronJob(timePattern){
+function cronJob(timePattern) {
     cron.schedule(timePattern, () => {
         const allAdvrtQuery = `select * from advt_master`;
         let today = new Date();
-        connection.query(allAdvrtQuery,function(err,results){
-          if(err || !results[0]){
-              console.log("1",err);
-              return;
-          }
-          // console.log("results",results)
-          let allAdverts = results;
-          const personsQuery =   `select * from person_master`;
-          connection.query(personsQuery,function(err,results){
-              if(err || !results[0]){
-                  console.log("2",err);
-                  return;
-              }
-              let allPersons = results;
-              // console.log(allPersons);
-              allAdverts.forEach(advert=>{
-                  let publishDate = new Date(advert.publish_date);
-                  let allEmails = [];
-                  if(publishDate.getDate() == today.getDate() && 
-                  publishDate.getMonth() == today.getMonth() && 
-                  publishDate.getFullYear() == today.getFullYear()){
-                          let selectedPersons = allPersons.filter(person=>{
-                              
-                              return (
-                                  advert.age_from <= person.age && person.age <= advert.age_to
-                              );
-                          });    
-                          selectedPersons.forEach(person=>{
-                              if(person.email_id){
-                                  allEmails.push(person.email_id);
-                              }
-                          });
-                          if(allEmails.length){
-                              sendMessage(allEmails.join(","),advert.advt_subject,advert.advt_details,function(err){
-                                  if(err){
-                                     
-                                      return;
-                                  }
-                                  console.log("SENT MESSAGES");
-                              });
-                          }
-                           
-                  }
-              });
-          });
+        connection.query(allAdvrtQuery, function (err, results) {
+            if (err || !results[0]) {
+                console.log("1", err);
+                return;
+            }
+            // console.log("results",results)
+            let allAdverts = results;
+            const personsQuery = `select * from person_master`;
+            connection.query(personsQuery, function (err, results) {
+                if (err || !results[0]) {
+                    console.log("2", err);
+                    return;
+                }
+                let allPersons = results;
+                // console.log(allPersons);
+                allAdverts.forEach(advert => {
+                    let publishDate = new Date(advert.publish_date);
+                    let allEmails = [];
+                    if (publishDate.getDate() == today.getDate() &&
+                        publishDate.getMonth() == today.getMonth() &&
+                        publishDate.getFullYear() == today.getFullYear()) {
+                        let selectedPersons = allPersons.filter(person => {
+
+                            return (
+                                advert.age_from <= person.age && person.age <= advert.age_to
+                            );
+                        });
+                        selectedPersons.forEach(person => {
+                            if (person.email_id) {
+                                allEmails.push(person.email_id);
+                            }
+                        });
+                        if (allEmails.length) {
+                            sendMessage(allEmails.join(","), advert.advt_subject, advert.advt_details, function (err) {
+                                if (err) {
+
+                                    return;
+                                }
+                                console.log("SENT MESSAGES");
+                            });
+                        }
+
+                    }
+                });
+            });
         });
-      },{
-          scheduled: true,
-          timezone: "Asia/Kolkata"
+    }, {
+            scheduled: true,
+            timezone: "Asia/Kolkata"
         });
 }
 
@@ -124,7 +120,7 @@ app.get('/createdb', (req, res) => {
 
 
 //////////////////get block ///////////////////////////
-app.get('/api/getBlock', [authJwt.verifyToken],(req, res) => {
+app.get('/api/getBlock', [authJwt.verifyToken], (req, res) => {
     connection.query('select * from block_master', (err, rows) => {
         if (err) throw err;
         else {
@@ -135,12 +131,12 @@ app.get('/api/getBlock', [authJwt.verifyToken],(req, res) => {
 
 ////////////////// get location ///////////////////////
 
-app.post('/api/getLocation', [authJwt.verifyToken],(req, res) => {
+app.post('/api/getLocation', [authJwt.verifyToken], (req, res) => {
     var locationData = {
-        country_id : req.selectedCountry,
-        state_id : req.selectedState,
-        city_id : req.selectedCity
-      } 
+        country_id: req.selectedCountry,
+        state_id: req.selectedState,
+        city_id: req.selectedCity
+    }
     var location = req.get("locationData");
     ////console.log("--------req.body.country_id---------- ", req.body.country_id);
     ////console.log("---------req.body.city_id---------- ", req.body.city_id);
@@ -237,7 +233,8 @@ app.get('/api/getFloor', [authJwt.verifyToken], (req, res) => {
 
 // Get all person 
 app.get('/api/getPerson', [authJwt.verifyToken], (req, res) => {
-connection.query('SELECT *, DATE_FORMAT(date_of_birth, "%d %m %Y") as date_of_birth FROM greattug_advt_publish.person_master', (err, result) => {
+    connection.query('SELECT *, DATE_FORMAT(date_of_birth, "%d %m %Y") as date_of_birth FROM greattug_advt_publish.person_master', (err, result) => {
+        // ////console.log(pid)
         if (err) throw err;
         else {
             res.json(result)
@@ -282,11 +279,10 @@ app.get('/api/getPersonData/:id', [authJwt.verifyToken], (req, res) => {
 
 app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (req, res) {
     var personDetails = {
-        firstname: encryption.encrypt(req.body.firstname),
-        // firstname: req.body.firstname,
-        middlename: encryption.encrypt(req.body.middlename),
-        lastname: encryption.encrypt(req.body.lastname),
-        country_id:req.body.country_id, 
+        firstname: req.body.firstname,
+        middlename: req.body.middlename,
+        lastname: req.body.lastname,
+        country_id: req.body.country_id,
         state_id: req.body.state_id,
         city_id: req.body.city_id,
         block_id: req.body.block_id,
@@ -307,7 +303,7 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
         ////console.log(rows);
         const count = rows[0].count;
         ////console.log(count);        
-        if(count > 0) {
+        if (count > 0) {
             res.json({
                 status: 401,
                 message: "Given Mobile Number is Registered. Please provide another number."
@@ -360,10 +356,6 @@ app.post('/api/advtPersonNew', urlencodedParser, function (req, res) {
                 status: 401,
                 message: "Given Mobile Number is Registered. Please provide another number."
             });
-            ////console.log("Please Provide another number");
-        }
-        else {
-           
             connection.query("INSERT INTO person_master SET ?", personDetails, function (err, result) {
                 ////console.log("result : ", result);
                 res.json({
@@ -430,45 +422,61 @@ app.get('/api/getClient', [authJwt.verifyToken], (req, res) => {
 
 ////////////////////////  get advt details  ///////////////////////////////
 
-app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {  
+app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
     var queryData = 'select client_id from client_master where admin_user_name = ?';
-    connection.query(queryData, [req.username], function(err, result) {
-        if(err) {
-            console.log(err);
-        }
-        else {
-            let validClientIds = result.map((item)=> {
-                console.log(item.client_id);
-                return item.client_id;
-            });
+    if (req.type_of_user != 'CLIENT') {
+        connection.query(queryData, [req.username], function (err, result) {
+            if (err) {
+                console.log(err);
+            }
+            else {
+                let validClientIds = result.map((item) => {
+                    console.log(item.client_id);
+                    return item.client_id;
+                });
+                console.log("validClientds", validClientIds);
+                if (!validClientIds.length) {
+                    res.send([]);
+                    return;
+                }
+                connection.query('select * from advt_master inner join client_master on  client_master.client_id = advt_master.client_id where client_master.client_id in (?)', [validClientIds], (err, result) => {
+                    if (err) throw err;
+                    else {
+                        ////console.log(result);
+                        res.send(result)
+                    }
+                })
+            }
+        });
+    }
+    else{
+        connection.query('select * from advt_master inner join client_master on  client_master.client_id = advt_master.client_id where client_master.user_name = ?', [req.username], (err, result) => {
+            if (err) throw err;
+            else {
+                ////console.log(result);
+                res.send(result)
+            }
+        })
+    }
 
-    connection.query('select * from advt_master inner join client_master on  client_master.client_id = advt_master.client_id where client_master.client_id in (?)', [validClientIds],(err, result) => {
-        if (err) throw err;
-        else {
-            ////console.log(result);
-            res.send(result)
-        }
-    })
-        }
-    });
-    
+
 });
 
 app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
-    connection.query('select *, DATE_FORMAT(publish_date, "%Y-%m-%d") as publish_date from client_master inner join advt_master on client_master.client_id= advt_master.client_id where advt_master.advt_id = ?',[req.params.id], (err, result) => {
+    connection.query('select *, DATE_FORMAT(publish_date, "%Y-%m-%d") as publish_date from client_master inner join advt_master on client_master.client_id= advt_master.client_id where advt_master.advt_id = ?', [req.params.id], (err, result) => {
         if (err) throw err;
         else {
-            if(!result[0] || result[0].admin_user_name != req.username){
+            if (!result[0] || result[0].admin_user_name != req.username) {
                 console.log(result, req.username);
                 res.status(401).send({
-                    message:"Invalid Request",
-                    data:result
+                    message: "Invalid Request",
+                    data: result
                 })
                 return;
             }
             ////console.log(result);
             res.json(
-                {data:result[0]})
+                { data: result[0] })
         }
     })
 });
@@ -477,7 +485,7 @@ app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
 
 app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req, res) {
     var advtDetails = {
-        client_id: req.body.client_id ,
+        client_id: req.body.client_id,
         advt_subject: req.body.advt_subject,
         advt_details: req.body.advt_details,
         publish_date: req.body.publish_date,
@@ -515,17 +523,17 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
     }
 
     var sql = "update advt_master set ? where advt_id=" + req.params.id;
-    connection.query(sql,advtDetails, function (err, result) {
+    connection.query(sql, advtDetails, function (err, result) {
         if (err) {
             ////console.log(err);
             console.log(err);
             res.staus(401).send({
-                error:true,
-                message:'error updating record'
+                error: true,
+                message: 'error updating record'
             })
         }
         else {
-            res.send({message:'Record has been updated'});
+            res.send({ message: 'Record has been updated' });
         }
     });
 })
@@ -554,7 +562,7 @@ app.post('/api/login', urlencodedParser, function (req, res) {
     var password = req.body.password;
     ////console.log('---------------- username', username);
     ////console.log('------------------ password', password);
-    
+
     resultsObj = {};
     if (username != null || username != "" || username != "undefined" &&
         password != null || password != "" || password != "undefined") {
@@ -562,11 +570,11 @@ app.post('/api/login', urlencodedParser, function (req, res) {
         ////console.log(queryLogin);
         connection.query(queryLogin, [username, password], function (error, results, fields) {
             if (results.length > 0) {
-            ////console.log("----- if (results.length > 0)");
+                ////console.log("----- if (results.length > 0)");
 
                 // ////console.log("===============",results.length)
-                 var string = JSON.stringify(results);
-                 var json = JSON.parse(string);
+                var string = JSON.stringify(results);
+                var json = JSON.parse(string);
                 // if (json[0].isActive == 'N') {
                 //     res.json({
                 //         status: 401,
@@ -576,14 +584,14 @@ app.post('/api/login', urlencodedParser, function (req, res) {
                 // }
 
                 var token = jwt.sign({
-                    username:json[0].username
+                    username: json[0].username
                 }, config.secret, {
-                    expiresIn: 86400 // expires in 24 hours
-                });
+                        expiresIn: 86400 // expires in 24 hours
+                    });
                 res.json({
                     status: 200,
                     message: 'successfully authenticated',
-                    accessToken:token,
+                    accessToken: token,
                     typeOfUser: json[0].type_of_user,
                     firstname: json[0].firstname,
                     lastname: json[0].lastname
@@ -600,9 +608,9 @@ app.post('/api/login', urlencodedParser, function (req, res) {
         });
     } else {
         ////console.log(" --------  Invalid User")
-       
+
         res.json({
-                 status: 401,
+            status: 401,
             message: 'Invalid data format '
         })
     }
@@ -647,7 +655,7 @@ app.post('/api/advtPublish', [authJwt.verifyToken], urlencodedParser, function (
         ////console.log('added')
         // ////console.log('----------------', req.body.fromAge);
         ////console.log('==================', req.body.text_message);
-        
+
         var publishDetails = {
             gender: req.body.gender,
             country_id: req.body.country_id,
@@ -663,7 +671,7 @@ app.post('/api/advtPublish', [authJwt.verifyToken], urlencodedParser, function (
         var insertQuery = 'INSERT INTO greattug_advt_publish.advt_details SET ?';
         ////console.log('---------------- insertQuery', insertQuery);
         ////console.log('-----------------------------------', publishDetails);
-        
+
         connection.query(insertQuery, publishDetails, function (err, res) {
             if (err) throw err;
             ////console.log('1 row added');
@@ -675,4 +683,4 @@ app.post('/api/advtPublish', [authJwt.verifyToken], urlencodedParser, function (
 
 
 
-app.use('/api/client',clientRouter);
+app.use('/api/client', clientRouter);
