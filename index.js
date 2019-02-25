@@ -239,7 +239,18 @@ app.get('/api/getPerson', [authJwt.verifyToken], (req, res) => {
     connection.query('SELECT *, DATE_FORMAT(date_of_birth, "%d %m %Y") as date_of_birth FROM greattug_advt_publish.person_master', (err, result) => {
         if (err) throw err;
         else {
-            res.json(result)
+            const resArr = [];
+            result.map(item => {
+                item.firstname = encryption.decrypt(item.firstname);
+                item.middlename = encryption.decrypt(item.middlename);
+                item.lastname = encryption.decrypt(item.lastname);
+                item.address = encryption.decrypt(item.address);
+                item.gender = encryption.decrypt(item.gender);
+                item.mobile_number1 = encryption.decrypt(item.mobile_number1);
+                item.mobile_number2 = encryption.decrypt(item.mobile_number2);
+                resArr.push(item);
+            });
+            res.json(resArr);
         }
     });
 });
@@ -296,7 +307,7 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
         gender: encryption.encrypt(req.body.gender),
         mobile_number1: encryption.encrypt(req.body.mobile_number1),
         mobile_number2: encryption.encrypt(req.body.mobile_number2),
-        username: encryption.encrypt('akash'),
+        username: req.username,
         creation_date: req.body.creation_date
     }
     // ////console.log(req.body);
@@ -313,13 +324,18 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
             ////console.log("Please Provide another number");
         }
         else {
-            
             connection.query("INSERT INTO person_master SET ?", personDetails, function(err, result) {
-                ////console.log("result : ", result);
+                if(err) {
+                    res.json({
+                        message: err
+                    })
+                }
+                else {
                 res.json({
                     status: 200,
                     message: "success"
                 });
+            }
             });
         }
         // res.send(this.firstname);
