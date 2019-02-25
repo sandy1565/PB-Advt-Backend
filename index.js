@@ -73,7 +73,7 @@ function cronJob(timePattern){
 
 connection.connect((err) => {
     if (err) {
-        throw err;
+        // throw err;
     }
     ////console.log("connected");
 })
@@ -233,13 +233,22 @@ app.get('/api/getFloor', [authJwt.verifyToken], (req, res) => {
 // Get all person 
 app.get('/api/getPerson', [authJwt.verifyToken], (req, res) => {
 connection.query('SELECT *, DATE_FORMAT(date_of_birth, "%d %m %Y") as date_of_birth FROM greattug_advt_publish.person_master', (err, result) => {
-        // ////console.log(pid)
         if (err) throw err;
         else {
-            ////console.log(result);
             res.json(result)
         }
     });
+});
+
+/* get Person AS PER person_id*/
+app.get('/api/getPersonData/:id', [authJwt.verifyToken], (req, res) => {
+    connection.query('select *, DATE_FORMAT(date_of_birth, "%Y-%m-%d") as date_of_birth from person_master where person_master.person_id = ?',[req.params.id], (err, result) => {
+        if (err) throw err;
+        else {
+            res.json(
+                {data:result[0]})
+        }
+    })
 });
 
 //////////////////////// get person ///////////////////////////////////////
@@ -325,8 +334,6 @@ app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser,
             })
         }
         else {
-            ////console.log(query);
-            ////console.log("firstName--------", req.body.firstname);
             res.json({
                 status: 200,
                 message: result
@@ -340,9 +347,7 @@ app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser,
 
 app.delete('/api/deletePerson/:id', [authJwt.verifyToken], function (req, res) {
     var id = req.params.id;
-    ////console.log(req.body);
     const query = "delete from `personform` where id=" + id;
-    ////console.log(query);
     connection.query(query, function (error, rows) {
         if (error) {
             ////console.log('Error in query');
