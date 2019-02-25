@@ -19,10 +19,6 @@ let d = 0;
 cronJob('0 5 18 * * *');
 
 
-function cronJob(timePattern){
-var cron = require('node-cron');
-let d = 0;
-cronJob('0 5 18 * * *');
 function cronJob(timePattern) {
     cron.schedule(timePattern, () => {
         const allAdvrtQuery = `select * from advt_master`;
@@ -626,8 +622,7 @@ app.post('/api/advtPublish', [authJwt.verifyToken], urlencodedParser, function (
         })
         // res.send('successful');
     });
-})
-};
+});
 
 
 
