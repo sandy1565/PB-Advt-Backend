@@ -243,7 +243,7 @@ app.get('/api/getPerson', [authJwt.verifyToken], (req, res) => {
             result.map(item => {
                 console.log(item.firstname);
                 item.firstname = encryption.decrypt((item.firstname).toString());
-                item.middlename = encryption.decrypt(item.middlename);
+                item.middlename = item.middlename ? encryption.decrypt(item.middlename): item.middlename,
                 item.lastname = encryption.decrypt(item.lastname);
                 item.address = encryption.decrypt(item.address);
                 item.gender = encryption.decrypt(item.gender);
@@ -265,7 +265,8 @@ app.get('/api/getPersonData/:id', [authJwt.verifyToken], (req, res) => {
             if (result[0]) {
                 data = result[0];
                 data.firstname = encryption.decrypt(data.firstname);
-                data.middlename = encryption.decrypt(data.middlename);
+                data.middlename =  data.middlename ? encryption.decrypt(data.middlename): data.middlename,
+
                 data.lastname = encryption.decrypt(data.lastname);
                 data.address = encryption.decrypt(data.address);
                 data.gender = encryption.decrypt(data.gender);
@@ -283,7 +284,7 @@ app.get('/api/getPersonData/:id', [authJwt.verifyToken], (req, res) => {
 app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (req, res) {
     var personDetails = {
         firstname: encryption.encrypt(req.body.firstname),
-        middlename: encryption.encrypt(req.body.middlename),
+        middlename: req.body.middlename ? encryption.encrypt(req.body.middlename): req.body.middlename,
         lastname: encryption.encrypt(req.body.lastname),
         country_id: req.body.country_id,
         state_id: req.body.state_id,
@@ -353,7 +354,8 @@ app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser,
     mobile_number2=? WHERE person_id=?`;
     ////console.log('query --- ', query);
     connection.query(query, [
-        encryption.encrypt(req.body.firstname), encryption.encrypt(req.body.middlename),
+    encryption.encrypt(req.body.firstname),
+     req.body.middlename ? encryption.encrypt(req.body.middlename): req.body.middlename,
     encryption.encrypt(req.body.lastname),
     req.body.country_id,
     req.body.state_id,
