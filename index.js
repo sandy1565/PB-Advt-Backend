@@ -241,7 +241,8 @@ app.get('/api/getPerson', [authJwt.verifyToken], (req, res) => {
         else {
             const resArr = [];
             result.map(item => {
-                item.firstname = encryption.decrypt(item.firstname);
+                console.log(item.firstname);
+                item.firstname = encryption.decrypt((item.firstname).toString());
                 item.middlename = encryption.decrypt(item.middlename);
                 item.lastname = encryption.decrypt(item.lastname);
                 item.address = encryption.decrypt(item.address);
