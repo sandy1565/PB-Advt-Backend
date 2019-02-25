@@ -19,7 +19,6 @@ cronJob('0 5 18 * * *');
 
 
 function cronJob(timePattern){
-var clientRouter = require('./client-route');
 var cron = require('node-cron');
 let d = 0;
 cronJob('0 5 18 * * *');
