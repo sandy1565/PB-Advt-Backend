@@ -27,8 +27,8 @@ router.get("/mail", async function(req,res){
 });
 
 router.get("/", [authJwt.verifyToken], function (req, res) {
-    const queryStr = 'select * from client_master where admin_user_name=?';
-    connection.query(queryStr, [req.username], async function (err, rows) {
+    let queryStr = 'select * from client_master';
+    connection.query(queryStr, async function (err, rows) {
         if (err) {
             res.status(401).send({
                 error: true,
@@ -38,6 +38,9 @@ router.get("/", [authJwt.verifyToken], function (req, res) {
             return;
         }
         if(rows){
+            rows = rows.filter(record=>{
+                return req.type_of_user == 'CLIENT' ? record.user_name == req.username : record.admin_user_name == req.username
+            });
             rows = rows.map(record=>{
                 record.client_name = encryption.decrypt(record.client_name);
                 record.phone_number = encryption.decrypt(record.phone_number);
@@ -97,8 +100,19 @@ router.delete("/:client_id", [authJwt.verifyToken], function (req, res) {
 });
 
 router.get("/:client_id", [authJwt.verifyToken], function (req, res) {
-    const queryStr = 'select * from client_master where client_id=? and admin_user_name=?';
-    connection.query(queryStr, [req.params.client_id, req.username], async function (err, rows) {
+    let queryStr = 'select * from client_master where client_id=? and admin_user_name=?';
+    let data;
+    console.log("type of user", req.type_of_user);
+    if (req.type_of_user == 'CLIENT') {
+        queryStr = 'select * from client_master where email_address=?';
+        data =  [req.username];
+        console.log("username",req.username);
+    }
+    else {
+        queryStr = 'select * from client_master where client_id=? and admin_user_name=?';
+        data =  [req.params.client_id, req.username];
+    }
+    connection.query(queryStr,data, async function (err, rows) {
         let record = rows[0];
         if (err || !record) {
             res.status(401).send({
@@ -139,8 +153,18 @@ router.get("/:client_id", [authJwt.verifyToken], function (req, res) {
 });
 
 router.put("/:client_id", [authJwt.verifyToken], function (req, res) {
-    const queryStr = 'select * from client_master where client_id=? and admin_user_name=?';
-    connection.query(queryStr, [req.params.client_id, req.username], async function (err, rows) {
+    
+    let queryStr = 'select * from client_master where client_id=? and admin_user_name=?';
+    if (req.type_of_user == 'CLIENT') {
+        queryStr = 'select * from client_master where email_address=?';
+        data =  [req.username];
+        console.log("username",req.username);
+    }
+    else {
+        queryStr = 'select * from client_master where client_id=? and admin_user_name=?';
+        data =  [req.params.client_id, req.username];
+    }
+    connection.query(queryStr,data, async function (err, rows) {
         let record = rows[0];
         if (err || !record) {
             res.status(401).send({
@@ -149,7 +173,7 @@ router.put("/:client_id", [authJwt.verifyToken], function (req, res) {
             });
             return;
         }
-
+      let validClientId = record.client_id;
         ({ profile_pic, client_name, country_id, state_id, city_id, location_id, block_id, firm_type, gst_number, representative_name, representative_id, phone_number, email_address, registration_details } = req.body);
         if (!client_name || !country_id || !state_id || !city_id
             || !location_id || !block_id || !gst_number || !representative_name
@@ -176,7 +200,7 @@ router.put("/:client_id", [authJwt.verifyToken], function (req, res) {
         }
 
 
-        const insertRecordToClientMaster = "update client_master set ? where client_id=" + "'" + req.params.client_id + "'";
+        const insertRecordToClientMaster = "update client_master set ? where client_id=" + "'" + validClientId + "'";
         try {
             let data = null;
             let profile_id = null;
@@ -326,7 +350,8 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
             if (err) {
                 res.status(401).send({
                     error: true,
-                    message: "Error inserting records."
+                    message: "Error inserting records.",
+                    query:err
                 });
                 return;
             }
@@ -385,7 +410,8 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
 
                             res.status(401).send({
                                 error: true,
-                                message: "Error inserting client records."
+                                message: "Error inserting client records.",
+                                query:err
                             });
 
                         });
