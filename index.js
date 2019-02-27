@@ -1,26 +1,30 @@
 var connection = require('./db.connection');
 const express = require('express');
-// const crypto = require('crypto');
 var app = express();
 var cors = require('cors');
 var sendMessage = require('./email-sender');
-app.use(cors());
-const route = express.Router;
 var bodyParser = require('body-parser');
 const encryption = require('./encryption');
-var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
-app.use(bodyParser.json({ limit: '10mb' }));
+
 var jwt = require('jsonwebtoken');
 const config = require('./config');
 const authJwt = require('./auth/verifyToken');
 var clientRouter = require('./client-route');
 var cron = require('node-cron');
-let d = 0;
 const accountSid = 'ACc4feaf5fb0340caa82fe8f39fe773b50';
 const authToken = 'cbd279807600b6444a347685d87b3768';
 const client = require('twilio')(accountSid, authToken);
 const logger = require('./logger');
+const path = require('path');
+console.log(path.join(__dirname,'public'));
+//setting middleware
+// app.use(express.static(path.join(__dirname,'public')));
+app.use('/public',express.static(path.resolve(__dirname, 'public')));
+// app.use(express.static(path.join(__dirname, 'public')));
 
+app.use(cors());
+var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
+app.use(bodyParser.json({ limit: '10mb' }));
 cronJob('0 33 14 * * *');
 
 
@@ -152,8 +156,10 @@ connection.connect((err) => {
     ////console.log("connected");
 })
 
+
+
 app.use(function (req, res, next) {
-    // Website you wish to allow to connect
+    // Website you wish to allow to connectcxc
     res.setHeader('Access-Control-Allow-Origin', '*');
 
     // Request methods you wish to allow
@@ -169,6 +175,12 @@ app.use(function (req, res, next) {
     // Pass to next layer of middleware
     next();
 });
+
+
+app.use(function(req,res,next){
+    console.log(req.url);
+    next();
+})
 
 var PORT = process.env.PORT || 3001;
 
