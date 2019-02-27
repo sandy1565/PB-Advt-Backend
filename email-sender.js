@@ -112,7 +112,7 @@ function makeBody(to, from, subject, message) {
 
 module.exports = function sendMessage(to,subject,message, callback){
    
-    var raw = makeBody(to, 'sandeepkr5495@gmail.com', subject, message);
+    var raw = makeBody(to, 'jitendrakukreja@gmail.com', subject, message);
     gmail.users.messages.send({
         auth: authConst,
         userId: 'me',

@@ -16,7 +16,11 @@ const authJwt = require('./auth/verifyToken');
 var clientRouter = require('./client-route');
 var cron = require('node-cron');
 let d = 0;
-cronJob('0 33 15 * * *');
+const accountSid = 'ACc4feaf5fb0340caa82fe8f39fe773b50';
+const authToken = 'cbd279807600b6444a347685d87b3768';
+const client = require('twilio')(accountSid, authToken);
+
+cronJob('0 24 11 * * *');
 
 
 function cronJob(timePattern) {
@@ -55,6 +59,33 @@ function cronJob(timePattern) {
                             );
                         });
                         selectedPersons.forEach(person => {
+                            if(person.phone_number){
+                                const log_query = `insert into advt_publish_log set ?`;
+                                let obj = {
+                                    advt_id:advert.advt_id,
+                                    client_user_name:advert.user_name,
+                                    admin_user_name:advert.client_user_name,
+                                    subject:advert.advt_subject,
+                                    message:advert.advt_details,
+                                    type:'message'
+                                };
+                                obj.phone_number = '+91'+person.phone_number;
+                                client.messages.create({
+                                    body:encryption.decrypt(advert.advt_details) ,
+                                    from: '+15595496128',
+                                    to: '+91'+person.phone_number
+                                  })
+                                 .then(message =>{                                   
+                                    connection.query(log_query,obj,function(err){
+                                        
+                                    });
+                                 },err=>{
+                                    obj.person_email_address = email_address;
+                                    connection.query(log_query,obj,function(err){
+                                        
+                                    });
+                                 });
+                            }
                             if (person.email_id) {
                                 allEmails.push(person.email_id);
                             }
@@ -90,6 +121,7 @@ function cronJob(timePattern) {
                                     });
                                 }); 
                             });
+                           
                         }
 
                     }

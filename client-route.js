@@ -4,7 +4,23 @@ var connection = require('./db.connection');
 const authJwt = require('./auth/verifyToken');
 var sendMessage = require('./email-sender');
 const encryption = require("./encryption");
+const accountSid = 'ACc4feaf5fb0340caa82fe8f39fe773b50';
+const authToken = 'cbd279807600b6444a347685d87b3768';
+const client = require('twilio')(accountSid, authToken);
 
+
+router.get("/message",async function(req,res){    
+
+    client.messages
+    .create({
+       body: 'This is the ship that made the Kessel Run in fourteen parsecs?',
+       from: '+15595496128',
+       to: '+919667763450'
+     })
+    .then(message => res.send(message.sid),err=>{
+        res.send("error"+err);
+    });
+});
 
 router.get("/mail", async function(req,res){
     let mailOptions = {
