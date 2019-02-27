@@ -3,7 +3,7 @@ const path = require('path');
 const nexmo = new Nexmo({
     apiKey: "8f80aaeb",
     apiSecret: "x2BNhk3TMiRbVW89",
-    applicationId: "22b51729-11b1-40f0-baef-dc23ab6bab3b",
+    applicationId: "b1ea4980-39d2-4ce4-b9f5-9a73b23f8a11",
     privateKey: "./private.key",
   });
 
@@ -18,7 +18,7 @@ const nexmo = new Nexmo({
           type: 'phone',
           number: "7289988810"
         },
-        answer_url: ["http://localhost:3001"]
+        answer_url: ["https://publishadvertisement.herokuapp.com"]
       }, function(err,data){
           console.log("restponse ",arguments);
           let pathVoice = path.join(path.dirname(require.main.filename) ,"public/test.mp3");
