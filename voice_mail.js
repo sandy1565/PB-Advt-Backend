@@ -27,7 +27,7 @@ const nexmo = new Nexmo({
             data.uuid,
             {
               stream_url: [
-               path.join(pathVoice)
+              pathVoice
               ],
               loop: 1
             });
