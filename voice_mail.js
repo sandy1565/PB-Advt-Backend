@@ -18,19 +18,29 @@ const nexmo = new Nexmo({
           type: 'phone',
           number: "7289988810"
         },
-        answer_url: ["https://publishadvertisement.herokuapp.com"]
-      }, function(err,data){
-          console.log("restponse ",arguments);
-          let pathVoice = "https://publishadvertisement.herokuapp.com/public/test.mp3";
-          console.log("dfdfd","https://publishadvertisement.herokuapp.com/public/test.mp3" );
-        nexmo.calls.stream.start(
-            data.uuid,
+        ncco:
+          [
             {
-              stream_url: [
-              pathVoice
-              ],
-              loop: 1
-            });
+              "action": "stream",
+              "streamUrl": ["https://publishadvertisement.herokuapp.com/public/test.mp3"]
+            }
+          ]
+        
+      }, function(err,data){
+      //   console.log(JSON.stringify(err));
+      //     console.log("restponse ",arguments);
+      //     let pathVoice = "https://publishadvertisement.herokuapp.com/public/test.mp3";
+      //     console.log("dfdfd","https://publishadvertisement.herokuapp.com/public/test.mp3" );
+      //   nexmo.calls.stream.start(
+      //       data.uuid,
+      //       {
+      //         stream_url: [
+      //         pathVoice
+      //         ],
+      //         loop: 1
+      //       },function(err,data){
+      //         console.log(err,data);
+      //       });
       });
   
   }
