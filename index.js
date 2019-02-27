@@ -63,14 +63,32 @@ function cronJob(timePattern) {
                         if (allEmails.length) {
                             sendMessage(allEmails.join(","), encryption.decrypt(advert.advt_subject), 
                             encryption.decrypt(advert.advt_details), function (err) {
+                                let status = 'success';
                                 if (err) {
+                                    status = 'failure';
                                     console.log("error for advt "+advert.advt_id);
-                                    return;
+                                    
                                 }
                                 let advert_id = advert.advt_id;
-                                connection.query('update advt_master set status = ? where advt_id = ?',['published',advert_id]);
-                               
-                                console.log("SENT MESSAGES");
+                                if(status == 'success') {
+                                    connection.query('update advt_master set status = ? where advt_id = ?',['published',advert_id]);
+                                    console.log("SENT MESSAGES");
+                                }
+                                const log_query = `insert into advt_publish_log set ?`;
+                                let obj = {
+                                    advt_id:advert.advt_id,
+                                    client_user_name:advert.user_name,
+                                    admin_user_name:advert.client_user_name,
+                                    subject:advert.advt_subject,
+                                    message:advert.advt_details,
+                                    type:'email'
+                                };
+                                allEmails.forEach((email_address)=>{
+                                    obj.person_email_address = email_address;
+                                    connection.query(log_query,obj,function(err){
+                                        
+                                    });
+                                }); 
                             });
                         }
 
