@@ -19,8 +19,9 @@ let d = 0;
 const accountSid = 'ACc4feaf5fb0340caa82fe8f39fe773b50';
 const authToken = 'cbd279807600b6444a347685d87b3768';
 const client = require('twilio')(accountSid, authToken);
+const logger = require('./logger');
 
-cronJob('0 24 11 * * *');
+cronJob('0 33 14 * * *');
 
 
 function cronJob(timePattern) {
@@ -59,28 +60,35 @@ function cronJob(timePattern) {
                             );
                         });
                         selectedPersons.forEach(person => {
-                            if(person.phone_number){
+                            if(person.mobile_number1){
                                 const log_query = `insert into advt_publish_log set ?`;
+                                // console.log("*******************",advert);
                                 let obj = {
                                     advt_id:advert.advt_id,
                                     client_user_name:advert.user_name,
-                                    admin_user_name:advert.client_user_name,
+                                    admin_user_name:advert.admin_user_name,
                                     subject:advert.advt_subject,
                                     message:advert.advt_details,
                                     type:'message'
                                 };
-                                obj.phone_number = '+91'+person.phone_number;
+                                let phone_number = encryption.decrypt(person.mobile_number1);
+                                obj.phone_number = '+91'+phone_number;
+
                                 client.messages.create({
                                     body:encryption.decrypt(advert.advt_details) ,
                                     from: '+15595496128',
-                                    to: '+91'+person.phone_number
+                                    to: '+91'+phone_number
                                   })
-                                 .then(message =>{                                   
+                                 .then(message =>{     
+                                     
+                                    console.log("************************",message);
+                                    obj.status = 'success';                              
                                     connection.query(log_query,obj,function(err){
                                         
                                     });
                                  },err=>{
-                                    obj.person_email_address = email_address;
+                                     console.log("************************ERRRR",err);
+                                    obj.status = 'failure';
                                     connection.query(log_query,obj,function(err){
                                         
                                     });
@@ -109,15 +117,18 @@ function cronJob(timePattern) {
                                 let obj = {
                                     advt_id:advert.advt_id,
                                     client_user_name:advert.user_name,
-                                    admin_user_name:advert.client_user_name,
+                                    admin_user_name:advert.admin_user_name,
                                     subject:advert.advt_subject,
                                     message:advert.advt_details,
                                     type:'email'
                                 };
                                 allEmails.forEach((email_address)=>{
                                     obj.person_email_address = email_address;
+                                    obj.status = 'success';
                                     connection.query(log_query,obj,function(err){
-                                        
+                                        if(err){
+                                            console.log(err);
+                                        }
                                     });
                                 }); 
                             });
@@ -604,31 +615,41 @@ app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req,
 
 
 app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function (req, res) {
-    var advtDetails = {
-        client_id: req.body.client_id,
-        advt_subject: encryption.encrypt(req.body.advt_subject),
-        advt_details: encryption.encrypt(req.body.advt_details),
-        publish_date: req.body.publish_date,
-        age_from: req.body.age_from,
-        age_to: req.body.age_to,
-        username: req.body.username,
-        status:req.body.status
-    }
-
-    var sql = "update advt_master set ? where advt_id=" + req.params.id;
-    connection.query(sql, advtDetails, function (err, result) {
-        if (err) {
-            ////console.log(err);
-            console.log(err);
-            res.staus(401).send({
-                error: true,
-                message: 'error updating record'
-            })
+    
+    var fetchSql = "select * from advt_master where advt_id=?";
+    connection.query(fetchSql,[req.params.id],function(err,rcds){
+        if(err || !rcds[0] || rcds[0].status == 'published'){
+            res.status(401).send({error:true,message:'UnAuthorized'});
+            return;
         }
-        else {
-            res.send({ message: 'Record has been updated' });
+    
+        var advtDetails = {
+            client_id: req.body.client_id,
+            advt_subject: encryption.encrypt(req.body.advt_subject),
+            advt_details: encryption.encrypt(req.body.advt_details),
+            publish_date: req.body.publish_date,
+            age_from: req.body.age_from,
+            age_to: req.body.age_to,
+            username: req.body.username,
+            status:req.body.status
         }
+    
+        var sql = "update advt_master set ? where advt_id=" + req.params.id;
+        connection.query(sql, advtDetails, function (err, result) {
+            if (err) {
+                ////console.log(err);
+                console.log(err);
+                res.staus(401).send({
+                    error: true,
+                    message: 'error updating record'
+                })
+            }
+            else {
+                res.send({ message: 'Record has been updated' });
+            }
+        });
     });
+  
 })
 
 
@@ -769,3 +790,4 @@ app.post('/api/advtPublish', [authJwt.verifyToken], urlencodedParser, function (
 
 
 app.use('/api/client', clientRouter);
+app.use('/api/log',logger);
