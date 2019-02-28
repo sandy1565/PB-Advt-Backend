@@ -136,6 +136,7 @@ function cronJob(timePattern) {
                                 allEmails.push(person.email_id);
                             }
                         });
+                        connection.query('update advt_master set status = ? where advt_id = ?',['published',advert.advt_id]);                                  
                         console.log("selected persons length for id "+advert.advt_id+" is "+selectedPersons.length, allEmails);
                         if (allEmails.length &&  advert.type.includes("email")) {
                             sendMessage(allEmails.join(","), encryption.decrypt(advert.advt_subject), 
@@ -148,7 +149,7 @@ function cronJob(timePattern) {
                                 }
                                 let advert_id = advert.advt_id;
                                 if(status == 'success') {
-                                    connection.query('update advt_master set status = ? where advt_id = ?',['published',advert_id]);
+                                    // connection.query('update advt_master set status = ? where advt_id = ?',['published',advert_id]);
                                     console.log("SENT MESSAGES");
                                 }
                                 const log_query = `insert into advt_publish_log set ?`;
