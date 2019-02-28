@@ -27,7 +27,7 @@ app.use('/public',express.static(path.resolve(__dirname, 'public')));
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
 app.use(bodyParser.json({ limit: '10mb' }));
-cronJob('0 33 16 * * *');
+cronJob('0 55 16 * * *');
 
 
 function cronJob(timePattern) {
@@ -38,6 +38,7 @@ function cronJob(timePattern) {
         let today = new Date();
         connection.query(allAdvrtQuery,['approved'], function (err, results) {
             if (err || !results[0]) {
+                console.log(err,results);
                 return;
             }
             // console.log("results",results)
@@ -68,8 +69,11 @@ function cronJob(timePattern) {
                         selectedPersons.forEach(person => {
 
                             if(person.mobile_number1 && advert.type.includes("voice")){
-                                voiceMessage(person.mobile_number1,advert.voiceFile, function(err,data){
+                                
+                                let phone_number = encryption.decrypt(person.mobile_number1);
+                                voiceMessage(phone_number,advert.voiceFile, function(err,data){
                                     let log_query = `insert into advt_publish_log set ?`;
+                                    console.log(JSON.stringify(err));
                                     // console.log("*******************",advert);
                                     let obj = {
                                         advt_id:advert.advt_id,
@@ -77,7 +81,7 @@ function cronJob(timePattern) {
                                         admin_user_name:advert.admin_user_name,
                                         subject:advert.advt_subject,
                                         message:advert.advt_details,
-                                        type:'message'
+                                        type:'voice'
                                     };
                                     let phone_number = encryption.decrypt(person.mobile_number1);
                                     obj.phone_number = '+91'+phone_number;
@@ -115,7 +119,7 @@ function cronJob(timePattern) {
                                   })
                                  .then(message =>{     
                                      
-                                    console.log("************************",message);
+                                    // console.log("************************",message);
                                     obj.status = 'success';                              
                                     connection.query(log_query,obj,function(err){
                                         
