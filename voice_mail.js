@@ -9,14 +9,15 @@ const nexmo = new Nexmo({
 
 
  module.exports =  function makeCall(phone_number,voicePath, callback){
-    nexmo.calls.create({
+    
+  nexmo.calls.create({
         to: [{
           type: 'phone',
-          number: phone_number
+          number: "91"+phone_number
         }],
         from: {
           type: 'phone',
-          number: "7289988810"
+          number: "917289988810"
         },
         ncco:
           [
@@ -27,6 +28,9 @@ const nexmo = new Nexmo({
           ]
         
       }, function(err,data){
+       console.log("VOICE *************");
+       console.log(err,"https://publishadvertisement.herokuapp.com"+voicePath);
+       console.log(data); 
         callback(err,data);
       });
   
