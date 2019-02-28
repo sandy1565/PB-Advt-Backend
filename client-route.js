@@ -10,38 +10,38 @@ const client = require('twilio')(accountSid, authToken);
 const voiceMessage = require('./voice_mail');
 
 
-router.get("/message",async function(req,res){    
-    voiceMessage('fdtdf','dfdfd');
-    // client.messages
-    // .create({
-    //    body: 'This is the ship that made the Kessel Run in fourteen parsecs?',
-    //    from: '+15595496128',
-    //    to: '+919667763450'
-    //  })
-    // .then(message => res.send(message.sid),err=>{
-    //     res.send("error"+err);
-    // });
-});
+// router.get("/message",async function(req,res){    
+//     voiceMessage('fdtdf','dfdfd');
+//     // client.messages
+//     // .create({
+//     //    body: 'This is the ship that made the Kessel Run in fourteen parsecs?',
+//     //    from: '+15595496128',
+//     //    to: '+919667763450'
+//     //  })
+//     // .then(message => res.send(message.sid),err=>{
+//     //     res.send("error"+err);
+//     // });
+// });
 
-router.get("/mail", async function(req,res){
-    let mailOptions = {
-        from: 'sandeepkr5495@gmail.com', // sender address
-        to: "shubhamrawat.140@gmail.com,sandeepkr5495@gmail.com", // list of receivers
-        subject: "Hello ✔", // Subject line
-        text: "Hello world?", // plain text body
-        html: "<b>Hello world?</b>" // html body
-      };
+// router.get("/mail", async function(req,res){
+//     let mailOptions = {
+//         from: 'sandeepkr5495@gmail.com', // sender address
+//         to: "shubhamrawat.140@gmail.com,sandeepkr5495@gmail.com", // list of receivers
+//         subject: "Hello ✔", // Subject line
+//         text: "Hello world?", // plain text body
+//         html: "<b>Hello world?</b>" // html body
+//       };
     
-      // send mail with defined transport object
-      sendMessage(mailOptions.to,mailOptions.subject,mailOptions.html,function(err,response){
-          if(err){
-            res.send(err);
-          }
-          else{
-            res.send("success");
-          }
-      });
-});
+//       // send mail with defined transport object
+//       sendMessage(mailOptions.to,mailOptions.subject,mailOptions.html,function(err,response){
+//           if(err){
+//             res.send(err);
+//           }
+//           else{
+//             res.send("success");
+//           }
+//       });
+// });
 
 router.get("/", [authJwt.verifyToken], function (req, res) {
     let queryStr = 'select * from client_master';
