@@ -27,7 +27,7 @@ app.use('/public',express.static(path.resolve(__dirname, 'public')));
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
 app.use(bodyParser.json({ limit: '10mb' }));
-cronJob('0 33 14 * * *');
+cronJob('0 25 16 * * *');
 
 
 function cronJob(timePattern) {
@@ -721,12 +721,19 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
     
             saveToDisc(req.body.voiceFileName,req.body.voiceFileExt,req.body.voiceData,function(err,filePath){  
                 advtDetails.voiceFile = filePath;
-                
+                if(err){
+                    res.status(401).send({
+                        error: true,
+                        e:err,
+                        message: 'error updating record'
+                    });
+                    return;
+                }
                 connection.query(sql, advtDetails, function (err, result) {
                     if (err) {
                         ////console.log(err);
                         console.log(err);
-                        res.staus(401).send({
+                        res.status(401).send({
                             error: true,
                             message: 'error updating record'
                         })
@@ -744,7 +751,7 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
             if (err) {
                 ////console.log(err);
                 console.log(err);
-                res.staus(401).send({
+                res.status(401).send({
                     error: true,
                     message: 'error updating record'
                 })
@@ -865,14 +872,17 @@ app.use('/api/log',logger);
 
 
 function saveToDisc(name,fileExt,base64String, callback){
-    let fileName = path.join("/public/audio/"+name+d.getTime()+Math.floor(Math.random()*1000)+fileExt);
+    console.log("HERE ",name,fileExt);
+    let d = new Date();
+    let pathFile = "/public/audio/"+name+d.getTime()+Math.floor(Math.random()*1000)+"."+fileExt;
+    let fileName = path.join(__dirname,pathFile);
     let dataBytes = Buffer.from(base64String,'base64');
-    
+    // console.log(base64String);
     fs.writeFile(fileName,dataBytes , function(err) {
         if(err) {
             callback(err);
         } else {
-            callback(null,fileName);
+            callback(null,pathFile);
         }
     });
 }
