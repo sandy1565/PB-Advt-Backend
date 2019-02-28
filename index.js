@@ -27,7 +27,7 @@ app.use('/public',express.static(path.resolve(__dirname, 'public')));
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
 app.use(bodyParser.json({ limit: '10mb' }));
-cronJob('0 25 16 * * *');
+cronJob('0 33 16 * * *');
 
 
 function cronJob(timePattern) {
@@ -68,7 +68,7 @@ function cronJob(timePattern) {
                         selectedPersons.forEach(person => {
 
                             if(person.mobile_number1 && advert.type.includes("voice")){
-                                voiceMessage(person.mobile_number1,advt.voiceFile, function(err,data){
+                                voiceMessage(person.mobile_number1,advert.voiceFile, function(err,data){
                                     let log_query = `insert into advt_publish_log set ?`;
                                     // console.log("*******************",advert);
                                     let obj = {
