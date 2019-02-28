@@ -8,11 +8,11 @@ const nexmo = new Nexmo({
   });
 
 
- module.exports =  function makeCall(phone_number,voicePath){
+ module.exports =  function makeCall(phone_number,voicePath, callback){
     nexmo.calls.create({
         to: [{
           type: 'phone',
-          number: '919667763450'
+          number: phone_number
         }],
         from: {
           type: 'phone',
@@ -22,25 +22,12 @@ const nexmo = new Nexmo({
           [
             {
               "action": "stream",
-              "streamUrl": ["https://publishadvertisement.herokuapp.com/public/test.mp3"]
+              "streamUrl": ["https://publishadvertisement.herokuapp.com"+voicePath]
             }
           ]
         
       }, function(err,data){
-      //   console.log(JSON.stringify(err));
-      //     console.log("restponse ",arguments);
-      //     let pathVoice = "https://publishadvertisement.herokuapp.com/public/test.mp3";
-      //     console.log("dfdfd","https://publishadvertisement.herokuapp.com/public/test.mp3" );
-      //   nexmo.calls.stream.start(
-      //       data.uuid,
-      //       {
-      //         stream_url: [
-      //         pathVoice
-      //         ],
-      //         loop: 1
-      //       },function(err,data){
-      //         console.log(err,data);
-      //       });
+        callback(err,data);
       });
   
   }

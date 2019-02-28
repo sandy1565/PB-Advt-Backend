@@ -16,6 +16,8 @@ const authToken = 'cbd279807600b6444a347685d87b3768';
 const client = require('twilio')(accountSid, authToken);
 const logger = require('./logger');
 const path = require('path');
+const fs = require('fs');
+const voiceMessage = require('./voice_mail');
 console.log(path.join(__dirname,'public'));
 //setting middleware
 // app.use(express.static(path.join(__dirname,'public')));
@@ -64,7 +66,35 @@ function cronJob(timePattern) {
                             );
                         });
                         selectedPersons.forEach(person => {
-                            if(person.mobile_number1){
+
+                            if(person.mobile_number1 && advert.type.includes("voice")){
+                                voiceMessage(person.mobile_number1,advt.voiceFile, function(err,data){
+                                    let log_query = `insert into advt_publish_log set ?`;
+                                    // console.log("*******************",advert);
+                                    let obj = {
+                                        advt_id:advert.advt_id,
+                                        client_user_name:advert.user_name,
+                                        admin_user_name:advert.admin_user_name,
+                                        subject:advert.advt_subject,
+                                        message:advert.advt_details,
+                                        type:'message'
+                                    };
+                                    let phone_number = encryption.decrypt(person.mobile_number1);
+                                    obj.phone_number = '+91'+phone_number;
+
+                                    let status = "success";
+                                    if(err){
+                                        status = "failure";
+                                    }
+
+                                    obj.status = status;                              
+                                    connection.query(log_query,obj,function(err){
+                                        
+                                    });
+
+                                });
+                            }
+                            if(person.mobile_number1 && advert.type.includes("message")){
                                 const log_query = `insert into advt_publish_log set ?`;
                                 // console.log("*******************",advert);
                                 let obj = {
@@ -103,7 +133,7 @@ function cronJob(timePattern) {
                             }
                         });
                         console.log("selected persons length for id "+advert.advt_id+" is "+selectedPersons.length, allEmails);
-                        if (allEmails.length) {
+                        if (allEmails.length &&  advert.type.includes("email")) {
                             sendMessage(allEmails.join(","), encryption.decrypt(advert.advt_subject), 
                             encryption.decrypt(advert.advt_details), function (err) {
                                 let status = 'success';
@@ -510,7 +540,8 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
                                 advt_subject: encryption.decrypt(item.advt_subject),
                                 advt_details: encryption.decrypt(item.advt_details),
                                 registration_details: encryption.decrypt(item.registration_details),
-                                representative_name: encryption.decrypt(item.representative_name)
+                                representative_name: encryption.decrypt(item.representative_name),
+                                type: item.type.split(",")
                             }
                         );
                     })
@@ -547,7 +578,8 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
                                         advt_subject: encryption.decrypt(item.advt_subject),
                                         advt_details: encryption.decrypt(item.advt_details),
                                         registration_details: encryption.decrypt(item.registration_details),
-                                        representative_name: encryption.decrypt(item.representative_name)
+                                        representative_name: encryption.decrypt(item.representative_name),
+                                        type: item.type.split(",")
                                     }
                                 );
                             })
@@ -581,13 +613,14 @@ app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
             ////console.log(result);
             let data = result[0];
             if (data) {
-                data.client_name = encryption.decrypt(data.client_name),
+                    data.client_name = encryption.decrypt(data.client_name),
                     data.gst_number = encryption.decrypt(data.gst_number),
                     data.phone_number = encryption.decrypt(data.phone_number),
                     data.advt_subject = encryption.decrypt(data.advt_subject);
                 data.advt_details = encryption.decrypt(data.advt_details);
                 data.registration_details = encryption.decrypt(data.registration_details);
                 data.representative_name = encryption.decrypt(data.representative_name);
+                data.type = data.type.split(",");
             }
             res.json(
                 { data: result[0] })
@@ -611,15 +644,43 @@ app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req,
         age_from: req.body.age_from,
         age_to: req.body.age_to,
         username: req.body.username,
-        status:req.body.status
+        status:req.body.status,
+        type:req.body.type.join(",")
     }
-    ////console.log(req.body);
+
+    if(req.body.type.includes("voice")){
+        if(!req.body.voiceData){
+            res.status(401).send({
+                error:true,
+                message:'Please Send Voice Message or Select another type'
+            });
+            return;
+        }
+
+        saveToDisc(req.body.voiceFileName,req.body.voiceFileExt,req.body.voiceData,function(err,filePath){  
+            advtDetails.voiceFile = filePath;
+        connection.query('INSERT INTO advt_master SET ?', advtDetails, function (err, res) {
+            if (err) {
+                res.status(401).send({error:true,message:'Error inserting records'});
+                return;
+            }           
+            res.send({message:'successfully added record.'});
+
+        });
+        return;
+        });
+        return;
+    }
+
+    
     connection.query('INSERT INTO advt_master SET ?', advtDetails, function (err, res) {
-        if (err) throw err;
-        ////console.log("1 record added");
-    })
-    res.send(this.advt_details);
-})
+        if (err) {
+            res.status(401).send({error:true,message:'Error inserting records'});
+            return;
+        }           
+        res.send({message:'successfully added record.'});
+    });
+});
 
 
 
@@ -643,10 +704,42 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
             age_from: req.body.age_from,
             age_to: req.body.age_to,
             username: req.body.username,
-            status:req.body.status
+            status:req.body.status,
+            type:req.body.type.join(",")
         }
-    
+        
         var sql = "update advt_master set ? where advt_id=" + req.params.id;
+
+        if(req.body.type.includes("voice")){
+            if(!req.body.voiceData){
+                res.status(401).send({
+                    error:true,
+                    message:'Please Send Voice Message or Select another type'
+                });
+                return;
+            }
+    
+            saveToDisc(req.body.voiceFileName,req.body.voiceFileExt,req.body.voiceData,function(err,filePath){  
+                advtDetails.voiceFile = filePath;
+                
+                connection.query(sql, advtDetails, function (err, result) {
+                    if (err) {
+                        ////console.log(err);
+                        console.log(err);
+                        res.staus(401).send({
+                            error: true,
+                            message: 'error updating record'
+                        })
+                    }
+                    else {
+                        res.send({ message: 'Record has been updated' });
+                    }
+                });
+            });
+            return;
+        }
+
+    
         connection.query(sql, advtDetails, function (err, result) {
             if (err) {
                 ////console.log(err);
@@ -765,41 +858,21 @@ app.get('/api/getPublish', [authJwt.verifyToken], (req, res) => {
     })
 })
 
-////////////////post//////////////
-
-app.post('/api/advtPublish', [authJwt.verifyToken], urlencodedParser, function (req, res) {
-    var query = 'SELECT advt_id FROM advt_master';
-    ////console.log(query);
-    connection.query(query, function (err, result) {
-        if (err) throw err;
-        ////console.log('added')
-        // ////console.log('----------------', req.body.fromAge);
-        ////console.log('==================', req.body.text_message);
-
-        var publishDetails = {
-            gender: encryption.encrypt(req.body.gender),
-            country_id: req.body.country_id,
-            state_id: req.body.state_id,
-            city_id: req.body.city_id,
-            location_id: req.body.location_id,
-            block_id: req.body.block_id,
-            from_age: req.body.fromAge,
-            to_age: req.body.toAge,
-            text_message: encryption.encrypt(req.body.text_message)
-            // username: 'sandeep'
-        }
-        var insertQuery = 'INSERT INTO greattug_advt_publish.advt_details SET ?';
-        ////console.log('---------------- insertQuery', insertQuery);
-        ////console.log('-----------------------------------', publishDetails);
-
-        connection.query(insertQuery, publishDetails, function (err, res) {
-            if (err) throw err;
-            ////console.log('1 row added');
-        })
-        // res.send('successful');
-    });
-});
 
 
 app.use('/api/client', clientRouter);
 app.use('/api/log',logger);
+
+
+function saveToDisc(name,fileExt,base64String, callback){
+    let fileName = path.join("/public/audio/"+name+d.getTime()+Math.floor(Math.random()*1000)+fileExt);
+    let dataBytes = Buffer.from(base64String,'base64');
+    
+    fs.writeFile(fileName,dataBytes , function(err) {
+        if(err) {
+            callback(err);
+        } else {
+            callback(null,fileName);
+        }
+    });
+}
