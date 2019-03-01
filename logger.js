@@ -50,24 +50,35 @@ router.get("/pdf",function(req,res){
     });
 
     var html = ejs.render(`
-    <style>
-    table {
-        font-family: arial, sans-serif;
-        border-collapse: collapse;
-        width: 100%;
-      }
-      
-      td, th {
-        border: 1px solid #dddddd;
-        text-align: left;
-        padding: 8px;
-      }
-      
-      tr:nth-child(even) {
-        background-color: #dddddd;
-      }
-    </style>
-    <table>
+    <html>
+        <head>
+        <style>
+        *{
+            
+            font-size:15px;
+        }
+        body{
+            background-color:#e5f8fb;
+        }
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+          }
+          
+          td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+          }
+          
+          tr:nth-child(even) {
+            background-color: #dddddd;
+          }
+        </style>
+        </head>
+        <body>
+        <table>
         <tr>
          <% Object.keys(users[0]).forEach(function(label){ %>
             <th>
@@ -86,6 +97,10 @@ router.get("/pdf",function(req,res){
       <% }); %>
     
     </table>
+        </body>
+    </html>
+   
+    
     `,{users});
  
     // console.log("length",users.length,users[0]);
@@ -97,10 +112,10 @@ router.get("/pdf",function(req,res){
             "bottom": "0",
             "left": ".5in"
           },"header": {
-            "height": "65mm",
-            "contents": `<div style="position:relative;"><div style="text-align: center;">Advertisement Publish Logs
+            "height": "80mm",
+            "contents": `<div style="position:relative;"><div style="text-align: center;margin-bottom:25px;">Advertisement Publish Logs
            </div>
-           <span style="position:absolute;right:0px;top:0px;">Generated On:  ${d.toLocaleDateString()}</span>            
+           <span style="position:absolute;right:0px;top:15px;">Generated On:  ${d.toLocaleDateString()}</span>            
                 <table>
                     <tr>
                         <th>Advertisement  Id</th>
@@ -125,7 +140,7 @@ router.get("/pdf",function(req,res){
             </table>
             </div>`
           },
-          "zoomFactor": "1"
+          "zoomFactor": "0.7"
     }).toFile('./public/pdf/report.pdf',function(err, res){
         if(err){
             callback({error:true,err:err});
