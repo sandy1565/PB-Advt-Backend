@@ -79,8 +79,8 @@ function cronJob(timePattern) {
                                         advt_id:advert.advt_id,
                                         client_user_name:advert.user_name,
                                         admin_user_name:advert.admin_user_name,
-                                        subject:advert.advt_subject,
-                                        message:advert.advt_details,
+                                        subject:encryption.decrypt(advert.advt_subject),
+                                        message:encryption.decrypt(advert.advt_details),
                                         type:'voice'
                                     };
                                     let phone_number = encryption.decrypt(person.mobile_number1);
@@ -105,8 +105,8 @@ function cronJob(timePattern) {
                                     advt_id:advert.advt_id,
                                     client_user_name:advert.user_name,
                                     admin_user_name:advert.admin_user_name,
-                                    subject:advert.advt_subject,
-                                    message:advert.advt_details,
+                                    subject:encryption.decrypt(advert.advt_subject),
+                                    message:encryption.decrypt(advert.advt_details),
                                     type:'message'
                                 };
                                 let phone_number = encryption.decrypt(person.mobile_number1);
@@ -157,8 +157,8 @@ function cronJob(timePattern) {
                                     advt_id:advert.advt_id,
                                     client_user_name:advert.user_name,
                                     admin_user_name:advert.admin_user_name,
-                                    subject:advert.advt_subject,
-                                    message:advert.advt_details,
+                                    subject:encryption.decrypt(advert.advt_subject),
+                                    message:encryption.decrypt(advert.advt_details),
                                     type:'email'
                                 };
                                 allEmails.forEach((email_address)=>{

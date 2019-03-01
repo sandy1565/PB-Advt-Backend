@@ -14,9 +14,11 @@
   "dependencies": {
     "body-parser": "^1.18.3",
     "cors": "^2.8.5",
+    "ejs": "^2.6.1",
     "express": "^4.16.4",
     "googleapis": "^27.0.0",
     "heroku": "^7.19.4",
+    "html-pdf": "^2.2.0",
     "jsonwebtoken": "^8.4.0",
     "mysql": "^2.16.0",
     "nexmo": "^2.4.1",
