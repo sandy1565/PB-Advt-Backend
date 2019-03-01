@@ -53,8 +53,11 @@ router.get("/pdf",function(req,res){
     <html>
         <head>
         <style>
-        body{
+        *{
+            
             font-size:15px;
+        }
+        body{
             background-color:#e5f8fb;
         }
         table {
