@@ -50,27 +50,31 @@ router.get("/pdf",function(req,res){
     });
 
     var html = ejs.render(`
-    <style>
-    *{
-        font-size:15px;
-    }
-    table {
-        font-family: arial, sans-serif;
-        border-collapse: collapse;
-        width: 100%;
-      }
-      
-      td, th {
-        border: 1px solid #dddddd;
-        text-align: left;
-        padding: 8px;
-      }
-      
-      tr:nth-child(even) {
-        background-color: #dddddd;
-      }
-    </style>
-    <table>
+    <html>
+        <head>
+        <style>
+        body{
+            font-size:15px;
+        }
+        table {
+            font-family: arial, sans-serif;
+            border-collapse: collapse;
+            width: 100%;
+          }
+          
+          td, th {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+          }
+          
+          tr:nth-child(even) {
+            background-color: #dddddd;
+          }
+        </style>
+        </head>
+        <body>
+        <table>
         <tr>
          <% Object.keys(users[0]).forEach(function(label){ %>
             <th>
@@ -89,6 +93,10 @@ router.get("/pdf",function(req,res){
       <% }); %>
     
     </table>
+        </body>
+    </html>
+   
+    
     `,{users});
  
     // console.log("length",users.length,users[0]);
@@ -128,7 +136,7 @@ router.get("/pdf",function(req,res){
             </table>
             </div>`
           },
-          "zoomFactor": "1"
+          "zoomFactor": "0.7"
     }).toFile('./public/pdf/report.pdf',function(err, res){
         if(err){
             callback({error:true,err:err});
