@@ -26,7 +26,7 @@ router.get("/pdf",function(req,res){
                 res.send(err);
                 return;
             }
-            res.sendFile(fileName);
+            res.send(fileName);
         });        
     });
 })
@@ -135,7 +135,7 @@ router.get("/pdf",function(req,res){
             return;
         }
         // console.log
-      callback(null,res.filename);
+      callback(null,html);
     });
     
 }
