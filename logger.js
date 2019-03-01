@@ -55,6 +55,7 @@ router.get("/pdf",function(req,res){
         <style>
         body{
             font-size:15px;
+            background-color:#e5f8fb;
         }
         table {
             font-family: arial, sans-serif;
