@@ -97,7 +97,7 @@ router.get("/pdf",function(req,res){
             "bottom": "0",
             "left": ".5in"
           },"header": {
-            "height": "65mm",
+            "height": "80mm",
             "contents": `<div style="position:relative;"><div style="text-align: center;">Advertisement Publish Logs
            </div>
            <span style="position:absolute;right:0px;top:0px;">Generated On:  ${d.toLocaleDateString()}</span>            
