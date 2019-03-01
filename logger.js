@@ -51,7 +51,7 @@ router.get("/pdf",function(req,res){
 
     var html = ejs.render(`
     <style>
-    body{
+    *{
         font-size:15px;
     }
     table {
