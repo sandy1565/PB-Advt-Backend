@@ -101,9 +101,9 @@ router.get("/pdf",function(req,res){
             "left": ".5in"
           },"header": {
             "height": "80mm",
-            "contents": `<div style="position:relative;"><div style="text-align: center;margin-bottom:20px;">Advertisement Publish Logs
+            "contents": `<div style="position:relative;"><div style="text-align: center;margin-bottom:25px;">Advertisement Publish Logs
            </div>
-           <span style="position:absolute;right:0px;top:10px;">Generated On:  ${d.toLocaleDateString()}</span>            
+           <span style="position:absolute;right:0px;top:15px;">Generated On:  ${d.toLocaleDateString()}</span>            
                 <table>
                     <tr>
                         <th>Advertisement  Id</th>
