@@ -27,7 +27,7 @@ app.use('/public',express.static(path.resolve(__dirname, 'public')));
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
 app.use(bodyParser.json({ limit: '10mb' }));
-cronJob('0 26 16 * * *');
+cronJob('0 8 13 * * *');
 
 
 function cronJob(timePattern) {
@@ -648,43 +648,60 @@ app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req,
         block_id: req.body.block_id,
         age_from: req.body.age_from,
         age_to: req.body.age_to,
-        username: req.body.username,
+        username: req.username,
         status:req.body.status,
         type:req.body.type.join(",")
     }
 
-    if(req.body.type.includes("voice")){
-        if(!req.body.voiceData){
-            res.status(401).send({
-                error:true,
-                message:'Please Send Voice Message or Select another type'
+    const client_query = `select * from client_master where client_id = ?`;
+    connection.query(client_query,[req.body.client_id],function(err,rows){
+        if(err || !rows[0]){
+            res.send({
+                err:true,
+                message:'Client Not Found'
             });
             return;
         }
-
-        saveToDisc(req.body.voiceFileName,req.body.voiceFileExt,req.body.voiceData,function(err,filePath){  
-            advtDetails.voiceFile = filePath;
-        connection.query('INSERT INTO advt_master SET ?', advtDetails, function (err, res) {
-            if (err) {
-                res.status(401).send({error:true,message:'Error inserting records'});
+        let client_record = rows[0];
+        sendMessage((client_record.email_address), 'New Advertisement Created', 
+                            'Please review Advertisement Created for you by '+req.body.username , function (err) {
+           console.log(err);
+           console.log(client_record.email_address);                    
+        });
+            if(req.body.type.includes("voice")){
+                if(!req.body.voiceData){
+                    res.status(401).send({
+                        error:true,
+                        message:'Please Send Voice Message or Select another type'
+                    });
+                    return;
+                }
+        
+                saveToDisc(req.body.voiceFileName,req.body.voiceFileExt,req.body.voiceData,function(err,filePath){  
+                    advtDetails.voiceFile = filePath;
+                connection.query('INSERT INTO advt_master SET ?', advtDetails, function (err, rows) {
+                    if (err) {
+                        res.status(401).send({error:true,message:'Error inserting records'});
+                        return;
+                    }           
+                    res.send({message:'successfully added record.'});
+        
+                });
                 return;
-            }           
-            res.send({message:'successfully added record.'});
+                });
+                return;
+            }
+        
+            
+            connection.query('INSERT INTO advt_master SET ?', advtDetails, function (err, rows) {
+                if (err) {
+                    res.status(401).send({error:true,message:'Error inserting records'});
+                    return;
+                }           
+                res.send({message:'successfully added record.'});
+            });
+    })
 
-        });
-        return;
-        });
-        return;
-    }
-
-    
-    connection.query('INSERT INTO advt_master SET ?', advtDetails, function (err, res) {
-        if (err) {
-            res.status(401).send({error:true,message:'Error inserting records'});
-            return;
-        }           
-        res.send({message:'successfully added record.'});
-    });
 });
 
 
@@ -715,14 +732,7 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
         
         var sql = "update advt_master set ? where advt_id=" + req.params.id;
 
-        if(req.body.type.includes("voice")){
-            if(!req.body.voiceData){
-                res.status(401).send({
-                    error:true,
-                    message:'Please Send Voice Message or Select another type'
-                });
-                return;
-            }
+        if(req.body.type.includes("voice") && req.body.voiceData ){
     
             saveToDisc(req.body.voiceFileName,req.body.voiceFileExt,req.body.voiceData,function(err,filePath){  
                 advtDetails.voiceFile = filePath;
@@ -750,7 +760,13 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
             });
             return;
         }
-
+        if(req.body.type.includes("voice") && (!req.body.voiceData && !req.body.voiceFile )){
+            res.status(401).send({
+                error:true,
+                message:'Please Send Voice Message or Select another type'
+            });
+            return;
+        }
     
         connection.query(sql, advtDetails, function (err, result) {
             if (err) {
@@ -849,8 +865,6 @@ app.post('/api/login', urlencodedParser, function (req, res) {
 })
 
 
-///////////////////advt-publish/////////////
-////////////get//////////////////////
 
 app.get('/api/getPublish', [authJwt.verifyToken], (req, res) => {
     connection.query('select messages_to_all, age_group from advt_publish', (err, rows) => {

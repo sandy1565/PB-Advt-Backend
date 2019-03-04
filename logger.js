@@ -4,21 +4,15 @@ var router = express.Router();
 const ejs = require('ejs');
 const pdf = require('html-pdf');
 var connection = require('./db.connection');
-// [authJwt.verifyToken]
-// router.get("/:id", function (req, res) {
-//     // const query = 'select * from advt_publish_log where '
-//     res.send("workgin");
 
-
-
-// });
-
-
-router.get("/pdf",function(req,res){
-    const query = 'select * from advt_publish_log';
-    connection.query(query,function(err,rows){
+router.get("/pdf/:id",function(req,res){
+    const query = 'select * from advt_publish_log where advt_id=?';
+    connection.query(query,[req.params.id],function(err,rows){
         if(err || !rows[0]){
-            res.send("no fiile");
+            res.send({
+                error:true,
+                message:'No Report Found'
+            });
             return;
         }
         sendReport(rows,function(err,fileName){
@@ -26,7 +20,7 @@ router.get("/pdf",function(req,res){
                 res.send(err);
                 return;
             }
-            res.sendFile(fileName);
+            res.send({fileName});
         });        
     });
 })
@@ -103,7 +97,6 @@ router.get("/pdf",function(req,res){
     
     `,{users});
  
-    // console.log("length",users.length,users[0]);
     let d = new Date();
     pdf.create(html,{
         "border": {
@@ -141,15 +134,13 @@ router.get("/pdf",function(req,res){
             </div>`
           },
           "zoomFactor": "0.7"
-    }).toFile('./public/pdf/report.pdf',function(err, res){
+    }).toFile('./public/pdf/report_'+info.advt_id +'.pdf',function(err, res){
         if(err){
             callback({error:true,err:err});
             return;
         }
-        // console.log
-      callback(null,res.filename);
-    });
-    
+      callback(null,'/public/pdf/report_' + info.advt_id +'.pdf');
+    });   
 }
 
 module.exports = router;
