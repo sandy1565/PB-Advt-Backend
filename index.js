@@ -28,7 +28,7 @@ app.use('/public', express.static(path.resolve(__dirname, 'public')));
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
 app.use(bodyParser.json({ limit: '10mb' }));
-cronJob('0 2 */1 * * *');
+cronJob('0 29 */1 * * *');
 
 
 function cronJob(timePattern) {
@@ -660,8 +660,9 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
 });
 
 async function  fetchPublishDates(item){
+    console.log("11111111111");
     let results = await new Promise((resolve, reject) => {
-        const query = 'select * from PUBLISH_DATE where advt_id = ?';
+        const query = 'select CONVERT_TZ(from_publish_date,\'+00:00\',\'+05:30\') as from_publish_date,  CONVERT_TZ(to_publish_date,\'+00:00\',\'+05:30\') as to_publish_date from PUBLISH_DATE where advt_id = ?';
         connection.query(query, [item.advt_id], function (err, rows) {
             if (err || !rows || !rows.length) {
                 reject([]);
@@ -669,21 +670,36 @@ async function  fetchPublishDates(item){
                 return;
             }
             let publish_dates = [];
+          
             rows.forEach(row => {
+                // let offset = '+5.5'
+                // let d = new Date(row.from_publish_date);
+                // let utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+                // let nd = new Date(utc + (3600000 * offset));
+                // let from_publish_date = nd;
+                // d = new Date(row.to_publish_date);
+                // utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+                // nd = new Date(utc + (3600000 * offset));
+                // let to_publish_date = nd;
+                console.log("row",row);
+                let from_publish_date = row.from_publish_date;
+                let to_publish_date = row.to_publish_date;
                 publish_dates.push({
-                    from_publish_date: row.from_publish_date,
-                    to_publish_date: row.to_publish_Date
+                    from_publish_date,
+                    to_publish_date
                 });
             });
             resolve(publish_dates);
         });
     });
+    console.log("results",results);
+    console.log("2222222222222");
     return results;
 }
 
-app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
+app.get('/api/getAdvt/:id', [authJwt.verifyToken],  (req, res) => {
 
-    connection.query('select * from client_master inner join advt_master on client_master.client_id= advt_master.client_id where advt_master.advt_id = ?', [req.params.id], (err, result) => {
+    connection.query('select * from client_master inner join advt_master on client_master.client_id= advt_master.client_id where advt_master.advt_id = ?', [req.params.id],async (err, result) => {
         if (err) throw err;
         else {
             if (!result[0] ||
@@ -711,28 +727,34 @@ app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
                 data.type = data.type.split(",");
                 data.block_ids = data.block_ids.split(",").map(n=>+n);
                 data.location_ids = data.location_ids.split(",").map(n=>+n);
+                console.log("IN");
+                data.publish_dates = await fetchPublishDates(data);
+                console.log("OUT",data.publish_dates);
             }
 
-            const query = 'select * from PUBLISH_DATE where advt_id = ?';
-            connection.query(query, [req.params.id], function (err, rows) {
-                if (err || !rows || !rows.length) {
-                    res.send({
-                        error: true,
-                        message: 'Publish Dates not found'
-                    });
-                    return;
-                }
-                let publish_dates = [];
-                rows.forEach(row => {
-                    publish_dates.push({
-                        from_publish_date: row.from_publish_date,
-                        to_publish_date: row.to_publish_date
-                    });
-                });
-                data.publish_dates = publish_dates;
-                res.send(
-                    { data: result[0] })
-            });
+            // const query = 'select * from PUBLISH_DATE where advt_id = ?';
+            // connection.query(query, [req.params.id], function (err, rows) {
+            //     console.log("rows",rows);
+            //     if (err || !rows || !rows.length) {
+            //         res.send({
+            //             error: true,
+            //             message: 'Publish Dates not found'
+            //         });
+            //         return;
+            //     }
+            //     let publish_dates = [];
+            //     rows.forEach(row => {
+            //         publish_dates.push({
+            //             from_publish_date: row.from_publish_date,
+            //             to_publish_date: row.to_publish_date
+            //         });
+            //     });
+            //     console.log("publish_dates",publish_dates);
+               
+            // });
+
+            res.send(
+                { data: result[0] })
            
         }
     })
@@ -767,8 +789,8 @@ app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req,
         country_id: req.body.country_id,
         state_id: req.body.state_id,
         city_id: req.body.city_id,
-        location_ids: req.body.location_ids.join(",").map(n=>+n),
-        block_ids: req.body.block_ids.join(",").map(n=>+n),
+        location_ids: req.body.location_ids.join(","),
+        block_ids: req.body.block_ids.join(","),
         age_from: req.body.age_from,
         age_to: req.body.age_to,
         username: req.username,
@@ -850,16 +872,17 @@ app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req,
                 return;
             }
             let advt_id = rows.insertId;
-            let publish_date_query = 'insert into PUBLISH_DATE set ?';
+            let publish_date_query = 'insert into PUBLISH_DATE(advt_id,from_publish_date,to_publish_date) values ?';
             let publish_date_record = [];
             req.body.publish_dates.forEach(date => {
-                publish_date_record.push({
+                publish_date_record.push([
                     advt_id,
-                    from_publish_date: date.from_publish_date,
-                    to_publish_date: date.to_publish_date
-                });
+                     date.from_publish_date,
+                     date.to_publish_date
+                ]);
             });
             connection.query(publish_date_query, [publish_date_record], function (err, rows) {
+                console.log(err);
                 if (err) {
                     connection.query('delete from advt_master where advt_id = ?', [advt_id], function (err, rows) {
                         res.status(401).send({
@@ -926,8 +949,8 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
             username: req.body.username,
             status: req.body.status,
             type: req.body.type.join(","),
-            location_ids: req.body.location_ids.join(",").map(n=>+n),
-            block_ids: req.body.block_ids.join(",").map(n=>+n)
+            location_ids: req.body.location_ids.join(","),
+            block_ids: req.body.block_ids.join(",")
         }
 
         var sql = "update advt_master set ? where advt_id=" + req.params.id;
@@ -955,19 +978,21 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
                     }
                     else {                        
                         let advt_id = req.params.id;
-                        let publish_date_query = 'insert into PUBLISH_DATE set ?';
+                        let publish_date_query = 'insert into PUBLISH_DATE(advt_id,from_publish_date,to_publish_date) values ?';
                         let publish_date_record = [];
                         if(req.type_of_user == 'CLIENT' && advtDetails.status == 'approved'){
                             
-                            publish(advtDetails);
+                            // publish(advtDetails);
                         }
                         req.body.publish_dates.forEach(date => {
-                            publish_date_record.push({
+                            publish_date_record.push([
                                 advt_id,
-                                from_publish_date: date.from_publish_date,
-                                to_publish_date: date.to_publish_date
-                            });
+                                 date.from_publish_date,
+                                 date.to_publish_date
+                            ]);
                         });
+
+                        console.log("publish_date_record",publish_date_record);
                         connection.query('delete from PUBLISH_DATE where advt_id = ?', [req.params.id],
                             function (err, rows) {
                                 if (err) {
@@ -1007,15 +1032,16 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
                     publish(advtDetails);
                 }
                 let advt_id = req.params.id;
-                let publish_date_query = 'insert into PUBLISH_DATE set ?';
+                let publish_date_query = 'insert into PUBLISH_DATE(advt_id,from_publish_date,to_publish_date) values ?';
                 let publish_date_record = [];
                 req.body.publish_dates.forEach(date => {
-                    publish_date_record.push({
+                    publish_date_record.push([
                         advt_id,
-                        from_publish_date: date.from_publish_date,
-                        to_publish_date: date.to_publish_date
-                    });
+                         date.from_publish_date,
+                         date.to_publish_date
+                    ]);
                 });
+                console.log("publish_date_record",publish_date_record);
                 connection.query('delete from PUBLISH_DATE where advt_id = ?', [req.params.id],
                     function (err, rows) {
                         if (err) {
@@ -1037,7 +1063,7 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
 app.delete('/api/deleteAdvt/:id', [authJwt.verifyToken], function (req, res) {
     var id = req.params.id;
     ////console.log(req.body);
-    const query = "delete from `advt_master` where id=" + id;
+    const query = "delete from `advt_master` where advt_id=" + id;
     ////console.log(query);
     connection.query(query, function (error, rows) {
         if (error) {
@@ -1061,7 +1087,7 @@ app.delete('/api/deleteAdvt/:id', [authJwt.verifyToken], function (req, res) {
                     return;
                 }
 
-                res.send('Record has been deleted');
+                res.send({message:'Record has been deleted'});
             })
         }
     })
