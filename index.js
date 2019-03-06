@@ -28,7 +28,7 @@ app.use('/public', express.static(path.resolve(__dirname, 'public')));
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
 app.use(bodyParser.json({ limit: '10mb' }));
-cronJob('0 29 */1 * * *');
+cronJob('0 41 */1 * * *');
 
 
 function cronJob(timePattern) {
@@ -59,7 +59,8 @@ function cronJob(timePattern) {
                     // if(advert.status == 'unapproved'){
                     //     return;
                     // }
-                    connection.query("select * from PUBLISH_DATE where advt_id = ?", [advert.advt_id], function (err, rows) {
+                    const ftchPubDts = 'select *, CONVERT_TZ(from_publish_date,\'+00:00\',\'+05:30\') as from_publish_date,  CONVERT_TZ(to_publish_date,\'+00:00\',\'+05:30\') as to_publish_date from PUBLISH_DATE where advt_id = ?';
+                    connection.query(ftchPubDts, [advert.advt_id], function (err, rows) {
                         if (err || !rows || !rows[0]) {
                             
                             return;
@@ -73,17 +74,31 @@ function cronJob(timePattern) {
                             let toPublishDate = new Date(row.to_publish_date);
                             console.log(fromPublishDate,toPublishDate);
                             let allEmails = [];
+                            console.log("fromPublishDate",fromPublishDate);
+                            console.log("toPublishDate",toPublishDate);
+                            console.log("today",fromPublishDate.getMinutes(),today.getMinutes(),
+                            );
+                            console.log(fromPublishDate.getDate() == today.getDate() ,
+                            fromPublishDate.getMonth() == today.getMonth() ,
+                            fromPublishDate.getFullYear() == today.getFullYear() ,
+                            ((fromPublishDate.getHours() <= today.getHours() && 
+                            toPublishDate.getHours() >= today.getHours()) ?true: 
+                            (fromPublishDate.getMinutes() <= today.getMinutes()&&
+                            toPublishDate.getMinutes() >= today.getMinutes())));
+
                             if (fromPublishDate.getDate() == today.getDate() &&
                             fromPublishDate.getMonth() == today.getMonth() &&
                             fromPublishDate.getFullYear() == today.getFullYear() &&
-                            ((fromPublishDate.getHours() > today.getHours() && 
-                            toPublishDate.getHours() < today.getHours()) ?true: (fromPublishDate.getMinutes() > today.getMinutes() && 
-                            toPublishDate.getMinutes() < today.getMinutes())
+                            ((fromPublishDate.getHours() <= today.getHours() && 
+                            toPublishDate.getHours() >= today.getHours()) ?true: (fromPublishDate.getMinutes() <= today.getMinutes() && 
+                            toPublishDate.getMinutes() >= today.getMinutes())
                             )) {
                                 connection.query("update  PUBLISH_DATE set status = ? where advt_id = ?", 
                                 ['published',advert.advt_id],function(){
     
                                 });
+                                console.log("allPersons",allPersons);
+                                console.log("advert",advert);
                                 let selectedPersons = allPersons.filter(person => {
 
                                     return (
@@ -93,6 +108,7 @@ function cronJob(timePattern) {
                                         (advert.age_to ? person.age <= advert.age_to :true)
                                     );
                                 });
+                                console.log("selectedPersons",selectedPersons);
                                 selectedPersons.forEach(person => {
 
                                     if (person.mobile_number1 && advert.type.includes("voice")) {
@@ -108,8 +124,8 @@ function cronJob(timePattern) {
                                                 admin_user_name: advert.admin_user_name,
                                                 subject: encryption.decrypt(advert.advt_subject),
                                                 message: encryption.decrypt(advert.advt_details),
-                                                from_publish_date,
-                                                to_publish_date,
+                                                from_publish_date:fromPublishDate.toISOString(),
+                                                to_publish_date:toPublishDate.toISOString(),
                                                 type: 'voice'
                                             };
                                             let phone_number = encryption.decrypt(person.mobile_number1);
@@ -136,8 +152,8 @@ function cronJob(timePattern) {
                                             admin_user_name: advert.admin_user_name,
                                             subject: encryption.decrypt(advert.advt_subject),
                                             message: encryption.decrypt(advert.advt_details),
-                                            from_publish_date,
-                                            to_publish_date,
+                                            from_publish_date:fromPublishDate.toISOString(),
+                                            to_publish_date:toPublishDate.toISOString(),
                                             type: 'message'
                                         };
                                         let phone_number = encryption.decrypt(person.mobile_number1);
@@ -190,8 +206,8 @@ function cronJob(timePattern) {
                                                 admin_user_name: advert.admin_user_name,
                                                 subject: encryption.decrypt(advert.advt_subject),
                                                 message: encryption.decrypt(advert.advt_details),
-                                                from_publish_date,
-                                                to_publish_date,
+                                                from_publish_date:fromPublishDate.toISOString(),
+                                                to_publish_date:toPublishDate.toISOString(),
                                                 type: 'email'
                                             };
                                             allEmails.forEach((email_address) => {
@@ -662,7 +678,7 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
 async function  fetchPublishDates(item){
     console.log("11111111111");
     let results = await new Promise((resolve, reject) => {
-        const query = 'select CONVERT_TZ(from_publish_date,\'+00:00\',\'+05:30\') as from_publish_date,  CONVERT_TZ(to_publish_date,\'+00:00\',\'+05:30\') as to_publish_date from PUBLISH_DATE where advt_id = ?';
+        const query = 'select *, CONVERT_TZ(from_publish_date,\'+00:00\',\'+05:30\') as from_publish_date,  CONVERT_TZ(to_publish_date,\'+00:00\',\'+05:30\') as to_publish_date from PUBLISH_DATE where advt_id = ?';
         connection.query(query, [item.advt_id], function (err, rows) {
             if (err || !rows || !rows.length) {
                 reject([]);

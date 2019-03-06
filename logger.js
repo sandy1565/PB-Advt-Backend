@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-
+const fs = require('fs');
 const ejs = require('ejs');
 const pdf = require('html-pdf');
 var connection = require('./db.connection');
@@ -98,6 +98,10 @@ router.get("/pdf/:id",function(req,res){
     `,{users});
  
     let d = new Date();
+    // fs.writeFileSync('./public/pdf/report_'+info.advt_id +'.html',html);
+    //     callback(null,'/public/pdf/report_'+info.advt_id +'.html');
+
+    // return;
     pdf.create(html,{
         "border": {
             "top": "0",            // default is 0, units: mm, cm, in, px
@@ -133,7 +137,7 @@ router.get("/pdf/:id",function(req,res){
             </table>
             </div>`
           },
-          "zoomFactor": "0.7"
+          "zoomFactor": "0.7"   
     }).toFile('./public/pdf/report_'+info.advt_id +'.pdf',function(err, res){
         if(err){
             callback({error:true,err:err});
