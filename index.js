@@ -87,8 +87,8 @@ function cronJob(timePattern) {
                                 let selectedPersons = allPersons.filter(person => {
 
                                     return (
-                                        advert.block_ids.split(",").includes(person.block_id)
-                                        && advert.location_ids.split(",").includes(person.location_id)
+                                        advert.block_ids.split(",").map(n=>+n).includes(person.block_id)
+                                        && advert.location_ids.split(",").map(n=>+n).includes(person.location_id)
                                         && (advert.age_from ?advert.age_from <= person.age:true) &&
                                         (advert.age_to ? person.age <= advert.age_to :true)
                                     );
@@ -591,8 +591,8 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
                                 registration_details: encryption.decrypt(item.registration_details),
                                 representative_name: encryption.decrypt(item.representative_name),
                                 type: item.type.split(","),
-                                location_ids: item.location_ids.split(","),
-                                block_ids: item.location_ids.split(",")
+                                location_ids: item.location_ids.split(",").map(n=>+n),
+                                block_ids: item.block_ids.split(",").map(n=>+n)
                             }
                         );
                     })
@@ -643,8 +643,8 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
                                         registration_details: encryption.decrypt(item.registration_details),
                                         representative_name: encryption.decrypt(item.representative_name),
                                         type: item.type.split(","),
-                                        location_ids: item.location_ids.split(","),
-                                        block_ids: item.location_ids.split(","),
+                                        location_ids: item.location_ids.split(",").map(n=>+n),
+                                        block_ids: item.block_ids.split(",").map(n=>+n),
                                         publish_dates
                                     }
                                 );
@@ -709,8 +709,8 @@ app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
                 data.registration_details = encryption.decrypt(data.registration_details);
                 data.representative_name = encryption.decrypt(data.representative_name);
                 data.type = data.type.split(",");
-                data.block_ids = data.block_ids.split(",");
-                data.location_ids = data.location_ids.split(",");
+                data.block_ids = data.block_ids.split(",").map(n=>+n);
+                data.location_ids = data.location_ids.split(",").map(n=>+n);
             }
 
             const query = 'select * from PUBLISH_DATE where advt_id = ?';
@@ -767,8 +767,8 @@ app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req,
         country_id: req.body.country_id,
         state_id: req.body.state_id,
         city_id: req.body.city_id,
-        location_ids: req.body.location_ids.join(","),
-        block_ids: req.body.block_ids.join(","),
+        location_ids: req.body.location_ids.join(",").map(n=>+n),
+        block_ids: req.body.block_ids.join(",").map(n=>+n),
         age_from: req.body.age_from,
         age_to: req.body.age_to,
         username: req.username,
@@ -926,8 +926,8 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
             username: req.body.username,
             status: req.body.status,
             type: req.body.type.join(","),
-            location_ids: req.body.location_ids.join(","),
-            block_ids: req.body.block_ids.join(",")
+            location_ids: req.body.location_ids.join(",").map(n=>+n),
+            block_ids: req.body.block_ids.join(",").map(n=>+n)
         }
 
         var sql = "update advt_master set ? where advt_id=" + req.params.id;
