@@ -95,7 +95,7 @@ router.delete("/:client_id", [authJwt.verifyToken], function (req, res) {
             if (err) {
                 res.status(401).send({
                     error: true,
-                    message: "No Client Found To Delete"
+                    message: "Can not delete Client"
                 });
                 return;
             }

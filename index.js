@@ -18,31 +18,32 @@ const logger = require('./logger');
 const path = require('path');
 const fs = require('fs');
 const voiceMessage = require('./voice_mail');
-console.log(path.join(__dirname,'public'));
+const publish = require('./advert_publish');
+console.log(path.join(__dirname, 'public'));
 //setting middleware
 // app.use(express.static(path.join(__dirname,'public')));
-app.use('/public',express.static(path.resolve(__dirname, 'public')));
+app.use('/public', express.static(path.resolve(__dirname, 'public')));
 // app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
 app.use(bodyParser.json({ limit: '10mb' }));
-cronJob('0 8 13 * * *');
+cronJob('0 2 */1 * * *');
 
 
 function cronJob(timePattern) {
     cron.schedule(timePattern, () => {
-        const allAdvrtQuery = `select * from advt_master inner join  client_master on  client_master.client_id = advt_master.client_id where advt_master.status = ?`;
-        
+        const allAdvrtQuery = `select * from advt_master inner join  client_master on  client_master.client_id = advt_master.client_id`;
+
         console.log("started")
-        let today = new Date();
-        connection.query(allAdvrtQuery,['approved'], function (err, results) {
+        let today = getIndianTime();
+        connection.query(allAdvrtQuery, function (err, results) {
             if (err || !results[0]) {
-                console.log(err,results);
+                console.log(err, results);
                 return;
             }
             // console.log("results",results)
-            console.log("all advts found ",results.length);
+            console.log("all advts found ", results.length);
             let allAdverts = results;
             const personsQuery = `select *, DATE_FORMAT(NOW(), '%Y') - DATE_FORMAT(date_of_birth, '%Y') - (DATE_FORMAT(NOW(), '00-%m-%d') < DATE_FORMAT(date_of_birth, '00-%m-%d')) AS age  from person_master`;
             connection.query(personsQuery, function (err, results) {
@@ -51,130 +52,164 @@ function cronJob(timePattern) {
                     return;
                 }
                 let allPersons = results;
-                
-                console.log("all persons found ",results.length);
+
+                console.log("all persons found ", results.length);
                 // console.log(allPersons);
                 allAdverts.forEach(advert => {
-                    let publishDate = new Date(advert.publish_date);
-                    let allEmails = [];
-                    if (publishDate.getDate() == today.getDate() &&
-                        publishDate.getMonth() == today.getMonth() &&
-                        publishDate.getFullYear() == today.getFullYear()) {
-                        let selectedPersons = allPersons.filter(person => {
-
-                            return (
-                                advert.age_from <= person.age && person.age <= advert.age_to
-                            );
-                        });
-                        selectedPersons.forEach(person => {
-
-                            if(person.mobile_number1 && advert.type.includes("voice")){
-                                
-                                let phone_number = encryption.decrypt(person.mobile_number1);
-                                voiceMessage(phone_number,advert.voiceFile, function(err,data){
-                                    let log_query = `insert into advt_publish_log set ?`;
-                                    console.log(JSON.stringify(err));
-                                    // console.log("*******************",advert);
-                                    let obj = {
-                                        advt_id:advert.advt_id,
-                                        client_user_name:advert.user_name,
-                                        admin_user_name:advert.admin_user_name,
-                                        subject:encryption.decrypt(advert.advt_subject),
-                                        message:encryption.decrypt(advert.advt_details),
-                                        type:'voice'
-                                    };
-                                    let phone_number = encryption.decrypt(person.mobile_number1);
-                                    obj.phone_number = '+91'+phone_number;
-
-                                    let status = "success";
-                                    if(err){
-                                        status = "failure";
-                                    }
-
-                                    obj.status = status;                              
-                                    connection.query(log_query,obj,function(err){
-                                        
-                                    });
-
-                                });
-                            }
-                            if(person.mobile_number1 && advert.type.includes("message")){
-                                const log_query = `insert into advt_publish_log set ?`;
-                                // console.log("*******************",advert);
-                                let obj = {
-                                    advt_id:advert.advt_id,
-                                    client_user_name:advert.user_name,
-                                    admin_user_name:advert.admin_user_name,
-                                    subject:encryption.decrypt(advert.advt_subject),
-                                    message:encryption.decrypt(advert.advt_details),
-                                    type:'message'
-                                };
-                                let phone_number = encryption.decrypt(person.mobile_number1);
-                                obj.phone_number = '+91'+phone_number;
-
-                                client.messages.create({
-                                    body:encryption.decrypt(advert.advt_details) ,
-                                    from: '+15595496128',
-                                    to: '+91'+phone_number
-                                  })
-                                 .then(message =>{     
-                                     
-                                    // console.log("************************",message);
-                                    obj.status = 'success';                              
-                                    connection.query(log_query,obj,function(err){
-                                        
-                                    });
-                                 },err=>{
-                                     console.log("************************ERRRR",err);
-                                    obj.status = 'failure';
-                                    connection.query(log_query,obj,function(err){
-                                        
-                                    });
-                                 });
-                            }
-                            if (person.email_id) {
-                                allEmails.push(person.email_id);
-                            }
-                        });
-                        connection.query('update advt_master set status = ? where advt_id = ?',['published',advert.advt_id]);                                  
-                        console.log("selected persons length for id "+advert.advt_id+" is "+selectedPersons.length, allEmails);
-                        if (allEmails.length &&  advert.type.includes("email")) {
-                            sendMessage(allEmails.join(","), encryption.decrypt(advert.advt_subject), 
-                            encryption.decrypt(advert.advt_details), function (err) {
-                                let status = 'success';
-                                if (err) {
-                                    status = 'failure';
-                                    console.log("error for advt "+advert.advt_id);
-                                    
-                                }
-                                let advert_id = advert.advt_id;
-                                if(status == 'success') {
-                                    // connection.query('update advt_master set status = ? where advt_id = ?',['published',advert_id]);
-                                    console.log("SENT MESSAGES");
-                                }
-                                const log_query = `insert into advt_publish_log set ?`;
-                                let obj = {
-                                    advt_id:advert.advt_id,
-                                    client_user_name:advert.user_name,
-                                    admin_user_name:advert.admin_user_name,
-                                    subject:encryption.decrypt(advert.advt_subject),
-                                    message:encryption.decrypt(advert.advt_details),
-                                    type:'email'
-                                };
-                                allEmails.forEach((email_address)=>{
-                                    obj.person_email_address = email_address;
-                                    obj.status = 'success';
-                                    connection.query(log_query,obj,function(err){
-                                        if(err){
-                                            console.log(err);
-                                        }
-                                    });
-                                }); 
-                            });
-                           
+                    // if(advert.status == 'unapproved'){
+                    //     return;
+                    // }
+                    connection.query("select * from PUBLISH_DATE where advt_id = ?", [advert.advt_id], function (err, rows) {
+                        if (err || !rows || !rows[0]) {
+                            
+                            return;
                         }
+                        rows.forEach(row => {
+                            if(row.status == 'published'){
+                                return;
+                            }
+                           
+                            let fromPublishDate = new Date(row.from_publish_date);
+                            let toPublishDate = new Date(row.to_publish_date);
+                            console.log(fromPublishDate,toPublishDate);
+                            let allEmails = [];
+                            if (fromPublishDate.getDate() == today.getDate() &&
+                            fromPublishDate.getMonth() == today.getMonth() &&
+                            fromPublishDate.getFullYear() == today.getFullYear() &&
+                            ((fromPublishDate.getHours() > today.getHours() && 
+                            toPublishDate.getHours() < today.getHours()) ?true: (fromPublishDate.getMinutes() > today.getMinutes() && 
+                            toPublishDate.getMinutes() < today.getMinutes())
+                            )) {
+                                connection.query("update  PUBLISH_DATE set status = ? where advt_id = ?", 
+                                ['published',advert.advt_id],function(){
+    
+                                });
+                                let selectedPersons = allPersons.filter(person => {
 
-                    }
+                                    return (
+                                        advert.block_ids.split(",").includes(person.block_id)
+                                        && advert.location_ids.split(",").includes(person.location_id)
+                                        && (advert.age_from ?advert.age_from <= person.age:true) &&
+                                        (advert.age_to ? person.age <= advert.age_to :true)
+                                    );
+                                });
+                                selectedPersons.forEach(person => {
+
+                                    if (person.mobile_number1 && advert.type.includes("voice")) {
+
+                                        let phone_number = encryption.decrypt(person.mobile_number1);
+                                        voiceMessage(phone_number, advert.voiceFile, function (err, data) {
+                                            let log_query = `insert into advt_publish_log set ?`;
+                                            console.log(JSON.stringify(err));
+                                            // console.log("*******************",advert);
+                                            let obj = {
+                                                advt_id: advert.advt_id,
+                                                client_user_name: advert.user_name,
+                                                admin_user_name: advert.admin_user_name,
+                                                subject: encryption.decrypt(advert.advt_subject),
+                                                message: encryption.decrypt(advert.advt_details),
+                                                from_publish_date,
+                                                to_publish_date,
+                                                type: 'voice'
+                                            };
+                                            let phone_number = encryption.decrypt(person.mobile_number1);
+                                            obj.phone_number = '+91' + phone_number;
+
+                                            let status = "success";
+                                            if (err) {
+                                                status = "failure";
+                                            }
+
+                                            obj.status = status;
+                                            connection.query(log_query, obj, function (err) {
+
+                                            });
+
+                                        });
+                                    }
+                                    if (person.mobile_number1 && advert.type.includes("message")) {
+                                        const log_query = `insert into advt_publish_log set ?`;
+                                        // console.log("*******************",advert);
+                                        let obj = {
+                                            advt_id: advert.advt_id,
+                                            client_user_name: advert.user_name,
+                                            admin_user_name: advert.admin_user_name,
+                                            subject: encryption.decrypt(advert.advt_subject),
+                                            message: encryption.decrypt(advert.advt_details),
+                                            from_publish_date,
+                                            to_publish_date,
+                                            type: 'message'
+                                        };
+                                        let phone_number = encryption.decrypt(person.mobile_number1);
+                                        obj.phone_number = '+91' + phone_number;
+
+                                        client.messages.create({
+                                            body: encryption.decrypt(advert.advt_details),
+                                            from: '+15595496128',
+                                            to: '+91' + phone_number
+                                        })
+                                            .then(message => {
+
+                                                // console.log("************************",message);
+                                                obj.status = 'success';
+                                                connection.query(log_query, obj, function (err) {
+
+                                                });
+                                            }, err => {
+                                                console.log("************************ERRRR", err);
+                                                obj.status = 'failure';
+                                                connection.query(log_query, obj, function (err) {
+
+                                                });
+                                            });
+                                    }
+                                    if (person.email_id) {
+                                        allEmails.push(person.email_id);
+                                    }
+                                });
+                                connection.query('update advt_master set status = ? where advt_id = ?', ['published', advert.advt_id]);
+                                console.log("selected persons length for id " + advert.advt_id + " is " + selectedPersons.length, allEmails);
+                                if (allEmails.length && advert.type.includes("email")) {
+                                    sendMessage(allEmails.join(","), encryption.decrypt(advert.advt_subject),
+                                        encryption.decrypt(advert.advt_details), function (err) {
+                                            let status = 'success';
+                                            if (err) {
+                                                status = 'failure';
+                                                console.log("error for advt " + advert.advt_id);
+
+                                            }
+                                            let advert_id = advert.advt_id;
+                                            if (status == 'success') {
+                                                // connection.query('update advt_master set status = ? where advt_id = ?',['published',advert_id]);
+                                                console.log("SENT MESSAGES");
+                                            }
+                                            const log_query = `insert into advt_publish_log set ?`;
+                                            let obj = {
+                                                advt_id: advert.advt_id,
+                                                client_user_name: advert.user_name,
+                                                admin_user_name: advert.admin_user_name,
+                                                subject: encryption.decrypt(advert.advt_subject),
+                                                message: encryption.decrypt(advert.advt_details),
+                                                from_publish_date,
+                                                to_publish_date,
+                                                type: 'email'
+                                            };
+                                            allEmails.forEach((email_address) => {
+                                                obj.person_email_address = email_address;
+                                                obj.status = 'success';
+                                                connection.query(log_query, obj, function (err) {
+                                                    if (err) {
+                                                        console.log(err);
+                                                    }
+                                                });
+                                            });
+                                        });
+                                }
+                            }
+                        });
+                    });
+
+
                 });
             });
         });
@@ -212,7 +247,7 @@ app.use(function (req, res, next) {
 });
 
 
-app.use(function(req,res,next){
+app.use(function (req, res, next) {
     console.log(req.url);
     next();
 })
@@ -365,7 +400,7 @@ app.get('/api/getPerson', [authJwt.verifyToken], (req, res) => {
                 item.address = encryption.decrypt(item.address);
                 item.gender = encryption.decrypt(item.gender);
                 item.mobile_number1 = encryption.decrypt(item.mobile_number1);
-                item.mobile_number2 = encryption.decrypt(item.mobile_number2);
+                item.mobile_number2 = item.mobile_number2?encryption.decrypt(item.mobile_number2):'';
                 resArr.push(item);
             });
             res.json(resArr);
@@ -388,7 +423,7 @@ app.get('/api/getPersonData/:id', [authJwt.verifyToken], (req, res) => {
                 data.address = encryption.decrypt(data.address);
                 data.gender = encryption.decrypt(data.gender);
                 data.mobile_number1 = encryption.decrypt(data.mobile_number1);
-                data.mobile_number2 = encryption.decrypt(data.mobile_number2);
+                data.mobile_number2 = data.mobile_number2?encryption.decrypt(data.mobile_number2):'';
             }
             res.json(
                 { data })
@@ -414,9 +449,9 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
         pincode: req.body.pincode,
         gender: encryption.encrypt(req.body.gender),
         mobile_number1: encryption.encrypt(req.body.mobile_number1),
-        mobile_number2: encryption.encrypt(req.body.mobile_number2),
+        mobile_number2: req.body.mobile_number2?encryption.encrypt(req.body.mobile_number2):'',
         username: req.username,
-        email_id:req.body.email_id,
+        email_id: req.body.email_id,
         creation_date: req.body.creation_date
     }
     // ////console.log(req.body);
@@ -486,7 +521,7 @@ app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser,
         req.body.date_of_birth,
         encryption.encrypt(req.body.gender),
         encryption.encrypt(req.body.mobile_number1),
-        encryption.encrypt(req.body.mobile_number2),
+        req.body.mobile_number2?encryption.encrypt(req.body.mobile_number2):'',
         req.params.person_id], function (err, result) {
             if (err) {
                 res.json({
@@ -508,13 +543,18 @@ app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser,
 
 app.delete('/api/deletePerson/:id', [authJwt.verifyToken], function (req, res) {
     var id = req.params.id;
-    const query = "delete from `personform` where id=" + id;
+    const query = "delete from person_master where person_id=" + req.params.id;
     connection.query(query, function (error, rows) {
         if (error) {
             ////console.log('Error in query');
+            res.status(401).send({
+                error:true,
+                message:"Person Not Found"
+            });
+            return;
         }
         else {
-            res.send('Record has been deleted');
+            res.send({message:'Record has been deleted'});
         }
     })
 })
@@ -531,14 +571,18 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
             else {
                 ////console.log(result);
                 if (result) {
-                    result = result.filter(item=>
-                            {
-                                return item.email_address == req.username
-                            }
-                        ).map(item => {
+                    result = result.filter(item => {
+                        return item.email_address == req.username
+                    }
+                    ).map( item => {
+                        console.log("item",item);
+                        let publish_dates = fetchPublishDates(item);
+                        console.log("publish_dates", publish_dates);
+
                         return (
                             {
                                 ...item,
+                                publish_dates,
                                 client_name: encryption.decrypt(item.client_name),
                                 gst_number: encryption.decrypt(item.gst_number),
                                 phone_number: encryption.decrypt(item.phone_number),
@@ -546,7 +590,9 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
                                 advt_details: encryption.decrypt(item.advt_details),
                                 registration_details: encryption.decrypt(item.registration_details),
                                 representative_name: encryption.decrypt(item.representative_name),
-                                type: item.type.split(",")
+                                type: item.type.split(","),
+                                location_ids: item.location_ids.split(","),
+                                block_ids: item.location_ids.split(",")
                             }
                         );
                     })
@@ -563,17 +609,29 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
                 console.log(err);
             }
             else {
+                if(!result || !result[0]){
+                    res.send([])
+                    return;
+                }
                 let validClientIds = result.map((item) => {
                     console.log(item.client_id);
                     return item.client_id;
                 });
 
                 connection.query('select * from advt_master inner join client_master on  client_master.client_id = advt_master.client_id where client_master.client_id in (?)', [validClientIds], (err, result) => {
-                    if (err) throw err;
+                    if (err) {
+                        res.status(401).send({
+                            error:true,
+                            err,
+                            message:'Error'
+                        });
+                        return;
+                    }
                     else {
                         ////console.log(result);
                         if (result) {
-                            result = result.map(item => {
+                            result = result.map(  item => {
+                                let publish_dates = fetchPublishDates(item);
                                 return (
                                     {
                                         ...item,
@@ -584,7 +642,10 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
                                         advt_details: encryption.decrypt(item.advt_details),
                                         registration_details: encryption.decrypt(item.registration_details),
                                         representative_name: encryption.decrypt(item.representative_name),
-                                        type: item.type.split(",")
+                                        type: item.type.split(","),
+                                        location_ids: item.location_ids.split(","),
+                                        block_ids: item.location_ids.split(","),
+                                        publish_dates
                                     }
                                 );
                             })
@@ -598,27 +659,49 @@ app.get('/api/getAdvts', [authJwt.verifyToken], (req, res) => {
 
 });
 
+async function  fetchPublishDates(item){
+    let results = await new Promise((resolve, reject) => {
+        const query = 'select * from PUBLISH_DATE where advt_id = ?';
+        connection.query(query, [item.advt_id], function (err, rows) {
+            if (err || !rows || !rows.length) {
+                reject([]);
+
+                return;
+            }
+            let publish_dates = [];
+            rows.forEach(row => {
+                publish_dates.push({
+                    from_publish_date: row.from_publish_date,
+                    to_publish_date: row.to_publish_Date
+                });
+            });
+            resolve(publish_dates);
+        });
+    });
+    return results;
+}
+
 app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
 
-    connection.query('select *, DATE_FORMAT(publish_date, "%Y-%m-%d") as publish_date from client_master inner join advt_master on client_master.client_id= advt_master.client_id where advt_master.advt_id = ?', [req.params.id], (err, result) => {
+    connection.query('select * from client_master inner join advt_master on client_master.client_id= advt_master.client_id where advt_master.advt_id = ?', [req.params.id], (err, result) => {
         if (err) throw err;
         else {
-            if (!result[0] || 
-                (req.type_of_user == 'CLIENT'?  result[0].email_address != req.username :result[0].admin_user_name != req.username )
+            if (!result[0] ||
+                (req.type_of_user == 'CLIENT' ? result[0].email_address != req.username : result[0].admin_user_name != req.username)
 
             ) {
                 console.log(result, req.username);
                 res.status(401).send({
                     message: "Invalid Request",
                     data: result,
-                    query:result[0]
+                    query: result[0]
                 })
                 return;
             }
             ////console.log(result);
             let data = result[0];
             if (data) {
-                    data.client_name = encryption.decrypt(data.client_name),
+                data.client_name = encryption.decrypt(data.client_name),
                     data.gst_number = encryption.decrypt(data.gst_number),
                     data.phone_number = encryption.decrypt(data.phone_number),
                     data.advt_subject = encryption.decrypt(data.advt_subject);
@@ -626,9 +709,31 @@ app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
                 data.registration_details = encryption.decrypt(data.registration_details);
                 data.representative_name = encryption.decrypt(data.representative_name);
                 data.type = data.type.split(",");
+                data.block_ids = data.block_ids.split(",");
+                data.location_ids = data.location_ids.split(",");
             }
-            res.json(
-                { data: result[0] })
+
+            const query = 'select * from PUBLISH_DATE where advt_id = ?';
+            connection.query(query, [req.params.id], function (err, rows) {
+                if (err || !rows || !rows.length) {
+                    res.send({
+                        error: true,
+                        message: 'Publish Dates not found'
+                    });
+                    return;
+                }
+                let publish_dates = [];
+                rows.forEach(row => {
+                    publish_dates.push({
+                        from_publish_date: row.from_publish_date,
+                        to_publish_date: row.to_publish_date
+                    });
+                });
+                data.publish_dates = publish_dates;
+                res.send(
+                    { data: result[0] })
+            });
+           
         }
     })
 });
@@ -636,70 +741,144 @@ app.get('/api/getAdvt/:id', [authJwt.verifyToken], (req, res) => {
 /////////////post advt //////////////////////
 
 app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req, res) {
+    let msgs = [];
+    if (!req.body.location_ids || !req.body.location_ids.length) {
+        msgs.push('Please Send Location Ids');
+    }
+    if (!req.body.block_ids || !req.body.block_ids.length) {
+        msgs.push('Please  Send Block Ids');
+    }
+    if (!req.body.publish_dates || !req.body.publish_dates.length) {
+        msgs.push("Please Select Atlease One publish Date");
+    }
+
+    if (msgs.length) {
+        res.status(401).send({
+            error: true,
+            message: msgs
+        });
+        return;
+    }
+
     var advtDetails = {
         client_id: req.body.client_id,
         advt_subject: encryption.encrypt(req.body.advt_subject),
         advt_details: encryption.encrypt(req.body.advt_details),
-        publish_date: req.body.publish_date,
         country_id: req.body.country_id,
         state_id: req.body.state_id,
         city_id: req.body.city_id,
-        location_id: req.body.location_id,
-        block_id: req.body.block_id,
+        location_ids: req.body.location_ids.join(","),
+        block_ids: req.body.block_ids.join(","),
         age_from: req.body.age_from,
         age_to: req.body.age_to,
         username: req.username,
-        status:req.body.status,
-        type:req.body.type.join(",")
+        status: "unapproved",
+        type: req.body.type.join(",")
     }
 
     const client_query = `select * from client_master where client_id = ?`;
-    connection.query(client_query,[req.body.client_id],function(err,rows){
-        if(err || !rows[0]){
+    connection.query(client_query, [req.body.client_id], function (err, rows) {
+        if (err || !rows[0]) {
             res.send({
-                err:true,
-                message:'Client Not Found'
+                err: true,
+                message: 'Client Not Found'
             });
             return;
         }
         let client_record = rows[0];
-        sendMessage((client_record.email_address), 'New Advertisement Created', 
-                            'Please review Advertisement Created for you by '+req.body.username , function (err) {
-           console.log(err);
-           console.log(client_record.email_address);                    
-        });
-            if(req.body.type.includes("voice")){
-                if(!req.body.voiceData){
-                    res.status(401).send({
-                        error:true,
-                        message:'Please Send Voice Message or Select another type'
-                    });
-                    return;
-                }
-        
-                saveToDisc(req.body.voiceFileName,req.body.voiceFileExt,req.body.voiceData,function(err,filePath){  
-                    advtDetails.voiceFile = filePath;
-                connection.query('INSERT INTO advt_master SET ?', advtDetails, function (err, rows) {
-                    if (err) {
-                        res.status(401).send({error:true,message:'Error inserting records'});
-                        return;
-                    }           
-                    res.send({message:'successfully added record.'});
-        
-                });
-                return;
+
+        if (req.body.type.includes("voice")) {
+            if (!req.body.voiceData) {
+                res.status(401).send({
+                    error: true,
+                    message: 'Please Send Voice Message or Select another type'
                 });
                 return;
             }
-        
-            
-            connection.query('INSERT INTO advt_master SET ?', advtDetails, function (err, rows) {
-                if (err) {
-                    res.status(401).send({error:true,message:'Error inserting records'});
-                    return;
-                }           
-                res.send({message:'successfully added record.'});
+
+            saveToDisc(req.body.voiceFileName, req.body.voiceFileExt, req.body.voiceData, function (err, filePath) {
+                advtDetails.voiceFile = filePath;
+                connection.query('INSERT INTO advt_master SET ?', advtDetails, function (err, rows) {
+                    console.log("rows", rows);
+                    if (err) {
+                        res.status(401).send({ error: true, message: 'Error inserting records' });
+                        return;
+                    }
+
+                    let advt_id = rows.insertId;
+                    let publish_date_query = 'insert into PUBLISH_DATE(advt_id,from_publish_date,to_publish_date) values ?';
+                    let publish_date_record = [];
+                    req.body.publish_dates.forEach(date => {
+                        publish_date_record.push([
+                            advt_id,
+                             date.from_publish_date,
+                             date.to_publish_date
+                        ]);
+                    });
+                    connection.query(publish_date_query, [publish_date_record], function (err, rows) {
+                        console.log("erR",err);
+                        if (err) {
+                            connection.query('delete from advt_master where advt_id = ?', [advt_id], function (err, rows) {
+                                res.status(401).send({
+                                    error: true,
+                                    message: 'Server Error',
+                                    err
+                                });
+                            });
+                            return;
+                        }
+                        res.send({ message: 'successfully added record.' });
+                        sendMessage((client_record.email_address), 'New Advertisement Created',
+                            'Please review Advertisement Created for you by ' + req.username, function (err) {
+                                console.log(err);
+                                console.log(client_record.email_address);
+                            });
+
+                    });
+
+                });
+                return;
             });
+            return;
+        }
+
+
+        connection.query('INSERT INTO advt_master SET ?', advtDetails, function (err, rows) {
+            console.log("rows", rows);
+            if (err) {
+                res.status(401).send({ error: true, message: 'Error inserting records' });
+                return;
+            }
+            let advt_id = rows.insertId;
+            let publish_date_query = 'insert into PUBLISH_DATE set ?';
+            let publish_date_record = [];
+            req.body.publish_dates.forEach(date => {
+                publish_date_record.push({
+                    advt_id,
+                    from_publish_date: date.from_publish_date,
+                    to_publish_date: date.to_publish_date
+                });
+            });
+            connection.query(publish_date_query, [publish_date_record], function (err, rows) {
+                if (err) {
+                    connection.query('delete from advt_master where advt_id = ?', [advt_id], function (err, rows) {
+                        res.status(401).send({
+                            error: true,
+                            message: 'Server Error',
+                            err
+                        });
+                    });
+                    return;
+                }
+                res.send({ message: 'successfully added record.' });
+                sendMessage((client_record.email_address), 'New Advertisement Created',
+                    'Please review Advertisement Created for you by ' + req.username, function (err) {
+                        console.log(err);
+                        console.log(client_record.email_address);
+                    });
+
+            });
+        });
     })
 
 });
@@ -710,36 +889,57 @@ app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req,
 
 
 app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function (req, res) {
-    
+    let msgs = [];
+    if (!req.body.location_ids || !req.body.location_ids.length) {
+        msgs.push('Please Send Location Ids');
+    }
+    if (!req.body.block_ids || !req.body.block_ids.length) {
+        msgs.push('Please  Send Block Ids');
+    }
+    if (!req.body.publish_dates || !req.body.publish_dates.length) {
+        msgs.push("Please Select Atlease One publish Date");
+    }
+
+    if (msgs.length) {
+        res.status(401).send({
+            error: true,
+            message: msgs
+        });
+        return;
+    }
+
+   
+
     var fetchSql = "select * from advt_master where advt_id=?";
-    connection.query(fetchSql,[req.params.id],function(err,rcds){
-        if(err || !rcds[0] || rcds[0].status == 'published'){
-            res.status(401).send({error:true,message:'UnAuthorized'});
+    connection.query(fetchSql, [req.params.id], function (err, rcds) {
+        if (err || !rcds[0] || rcds[0].status == 'published') {
+            res.status(401).send({ error: true, message: 'UnAuthorized' });
             return;
         }
-    
+
         var advtDetails = {
             client_id: req.body.client_id,
             advt_subject: encryption.encrypt(req.body.advt_subject),
             advt_details: encryption.encrypt(req.body.advt_details),
-            publish_date: req.body.publish_date,
             age_from: req.body.age_from,
             age_to: req.body.age_to,
             username: req.body.username,
-            status:req.body.status,
-            type:req.body.type.join(",")
+            status: req.body.status,
+            type: req.body.type.join(","),
+            location_ids: req.body.location_ids.join(","),
+            block_ids: req.body.block_ids.join(",")
         }
-        
+
         var sql = "update advt_master set ? where advt_id=" + req.params.id;
 
-        if(req.body.type.includes("voice") && req.body.voiceData ){
-    
-            saveToDisc(req.body.voiceFileName,req.body.voiceFileExt,req.body.voiceData,function(err,filePath){  
+        if (req.body.type.includes("voice") && req.body.voiceData) {
+
+            saveToDisc(req.body.voiceFileName, req.body.voiceFileExt, req.body.voiceData, function (err, filePath) {
                 advtDetails.voiceFile = filePath;
-                if(err){
+                if (err) {
                     res.status(401).send({
                         error: true,
-                        e:err,
+                        e: err,
                         message: 'error updating record'
                     });
                     return;
@@ -753,21 +953,45 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
                             message: 'error updating record'
                         })
                     }
-                    else {
-                        res.send({ message: 'Record has been updated' });
+                    else {                        
+                        let advt_id = req.params.id;
+                        let publish_date_query = 'insert into PUBLISH_DATE set ?';
+                        let publish_date_record = [];
+                        if(req.type_of_user == 'CLIENT' && advtDetails.status == 'approved'){
+                            
+                            publish(advtDetails);
+                        }
+                        req.body.publish_dates.forEach(date => {
+                            publish_date_record.push({
+                                advt_id,
+                                from_publish_date: date.from_publish_date,
+                                to_publish_date: date.to_publish_date
+                            });
+                        });
+                        connection.query('delete from PUBLISH_DATE where advt_id = ?', [req.params.id],
+                            function (err, rows) {
+                                if (err) {
+                                    res.send({ message: 'Record has been updated' });
+                                    return;
+                                }
+                                connection.query(publish_date_query, [publish_date_record], function (err, rows) {
+
+                                    res.send({ message: 'Record has been updated' });
+                                });
+                            });
                     }
                 });
             });
             return;
         }
-        if(req.body.type.includes("voice") && (!req.body.voiceData && !req.body.voiceFile )){
+        if (req.body.type.includes("voice") && (!req.body.voiceData && !req.body.voiceFile)) {
             res.status(401).send({
-                error:true,
-                message:'Please Send Voice Message or Select another type'
+                error: true,
+                message: 'Please Send Voice Message or Select another type'
             });
             return;
         }
-    
+
         connection.query(sql, advtDetails, function (err, result) {
             if (err) {
                 ////console.log(err);
@@ -778,11 +1002,35 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
                 })
             }
             else {
-                res.send({ message: 'Record has been updated' });
+                if(req.type_of_user == 'CLIENT' && advtDetails.status == 'approved'){
+                            
+                    publish(advtDetails);
+                }
+                let advt_id = req.params.id;
+                let publish_date_query = 'insert into PUBLISH_DATE set ?';
+                let publish_date_record = [];
+                req.body.publish_dates.forEach(date => {
+                    publish_date_record.push({
+                        advt_id,
+                        from_publish_date: date.from_publish_date,
+                        to_publish_date: date.to_publish_date
+                    });
+                });
+                connection.query('delete from PUBLISH_DATE where advt_id = ?', [req.params.id],
+                    function (err, rows) {
+                        if (err) {
+                            res.send({ message: 'Record has been updated' });
+                            return;
+                        }
+                        connection.query(publish_date_query, [publish_date_record], function (err, rows) {
+
+                            res.send({ message: 'Record has been updated' });
+                        });
+                    });
             }
         });
     });
-  
+
 })
 
 
@@ -795,9 +1043,26 @@ app.delete('/api/deleteAdvt/:id', [authJwt.verifyToken], function (req, res) {
         if (error) {
             ////console.log('Error in query');
             ////console.log(query)
+            res.status(401).send({
+                error: true,
+                message: 'Record not deleted',
+                err: error
+            });
+            return;
         }
         else {
-            res.send('Record has been deleted');
+            connection.query('delete from PUBLISH_DATE where advt_id = ?', [id], function (error, rows) {
+                if (error) {
+                    res.status(401).send({
+                        error: true,
+                        message: 'Record not deleted',
+                        err: error
+                    });
+                    return;
+                }
+
+                res.send('Record has been deleted');
+            })
         }
     })
 })
@@ -887,21 +1152,39 @@ app.get('/api/getPublish', [authJwt.verifyToken], (req, res) => {
 
 
 app.use('/api/client', clientRouter);
-app.use('/api/log',logger);
+app.use('/api/log', logger);
 
 
-function saveToDisc(name,fileExt,base64String, callback){
-    console.log("HERE ",name,fileExt);
+function saveToDisc(name, fileExt, base64String, callback) {
+    console.log("HERE ", name, fileExt);
     let d = new Date();
-    let pathFile = "/public/audio/"+name+d.getTime()+Math.floor(Math.random()*1000)+"."+fileExt;
-    let fileName = path.join(__dirname,pathFile);
-    let dataBytes = Buffer.from(base64String,'base64');
+    let pathFile = "/public/audio/" + name + d.getTime() + Math.floor(Math.random() * 1000) + "." + fileExt;
+    let fileName = path.join(__dirname, pathFile);
+    let dataBytes = Buffer.from(base64String, 'base64');
     // console.log(base64String);
-    fs.writeFile(fileName,dataBytes , function(err) {
-        if(err) {
+    fs.writeFile(fileName, dataBytes, function (err) {
+        if (err) {
             callback(err);
         } else {
-            callback(null,pathFile);
+            callback(null, pathFile);
         }
     });
+}
+
+
+function getIndianTime(offset = '+5.5') {
+    // create Date object for current location
+    var d = new Date();
+
+    // convert to msec
+    // subtract local time zone offset
+    // get UTC time in msec
+    var utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+
+    // create new Date object for different city
+    // using supplied offset
+    var nd = new Date(utc + (3600000 * offset));
+
+    // return time as a string
+    return nd;
 }
