@@ -356,9 +356,63 @@ app.get('/api/getCountryDetails', [authJwt.verifyToken], (req, res) => {
     })
 });
 
+app.delete("/api/country/:id",[authJwt.verifyToken],(req,res) => {
+    connection.query("delete from country_master where country_id = ?",[req.params.id],function(err,rows){
+        if(err){
+            return res.status(401).send({message:"Can not delete record."});
+        }
+        return res.send({message:'Deleted record'});
+    });
+});
+
+app.post("/api/country",[authJwt.verifyToken],(req,res) => {    
+    connection.query("select max(country_id) as country_id from country_master",function(err,row){       
+        if(err || !row[0]){
+            return res.status(401).send({message:'Not Inserted country record'});
+        }
+        let body = {
+            country_name:req.body.country_name,
+            counrty_code:req.body.counrty_code,
+            country_id:row[0].country_id+1
+        }
+        connection.query("insert into country_master set ?",body,function(err,rows){
+            if(err){
+                return res.status(401).send({message:'Not Inserted country record',err});
+            }
+            else{
+                return res.send({message:'Added Records',country_id:body.country_id});
+            }
+        });
+    });
+  
+});
+
+app.put('/api/country/:id',[authJwt.verifyToken],(req,res) => {
+
+    connection.query("update country_master SET country_name = ?, counrty_code = ? where country_id = ?",[req.body.country_name,req.body.counrty_code,req.params.id],
+    function(err,rows){
+        if(err){
+            return res.status(401).send({message:'Record Not inserted',err});
+        }
+        else{
+            return res.send({message:'Update country records'});
+        }
+    });
+});
+
 // get State
 app.get('/api/getState', [authJwt.verifyToken], (req, res) => {
     connection.query('select * from state_master', (err, result) => {
+        if (err) throw err;
+        else {
+            res.json(result)
+        }
+        // ////console.log(result)
+    })
+});
+
+app.get('/api/getState/:id', [authJwt.verifyToken], (req, res) => {
+    connection.query('select * from state_master where country_id = ?',[req.params.id], (err, result) => {
         if (err) throw err;
         else {
             res.json(result)
@@ -371,6 +425,17 @@ app.get('/api/getState', [authJwt.verifyToken], (req, res) => {
 // get city
 app.get('/api/getCities', [authJwt.verifyToken], (req, res) => {
     connection.query('select * from city_master', (err, result) => {
+        if (err) throw err;
+        else {
+            res.json(result)
+        }
+        // ////console.log(result)
+    })
+})
+
+// get city
+app.get('/api/getCities/:id', [authJwt.verifyToken], (req, res) => {
+    connection.query('select * from city_master where state_id = ?',[req.params.id], (err, result) => {
         if (err) throw err;
         else {
             res.json(result)
