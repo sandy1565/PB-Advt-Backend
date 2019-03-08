@@ -575,7 +575,7 @@ app.post("/api/location",[authJwt.verifyToken],(req,res) => {
                 return res.status(401).send({message:'Not Inserted location record',err});
             }
             else{
-                return res.send({message:'Added Records',location_id:rows.insertId});
+                return res.send({message:'Added Records',location_id:body.location_id});
             }
         });
     });
