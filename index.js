@@ -433,11 +433,7 @@ app.delete("/api/state/:id",[authJwt.verifyToken],(req,res) => {
 });
 
 app.post("/api/state",[authJwt.verifyToken],(req,res) => {    
-    connection.query("select state_id from state_master",function(err,row){       
-        if(err || !row[0]){
-            return res.status(401).send({message:'Not Inserted state record'});
-        }
-        let body = {
+       let body = {
             statename:req.body.statename,
             country_id: req.body.country_id
         }
@@ -449,8 +445,6 @@ app.post("/api/state",[authJwt.verifyToken],(req,res) => {
                 return res.send({message:'Added Records',state_id:rows.insertId});
             }
         });
-    });
-  
 });
 
 app.put('/api/state/:id',[authJwt.verifyToken],(req,res) => {
@@ -499,11 +493,7 @@ app.delete("/api/city/:id",[authJwt.verifyToken],(req,res) => {
     });
 });
 
-app.post("/api/city",[authJwt.verifyToken],(req,res) => {    
-    connection.query("select city_id from city_master",function(err,row){       
-        if(err || !row[0]){
-            return res.status(401).send({message:'Not Inserted city record'});
-        }
+app.post("/api/city",[authJwt.verifyToken],(req,res) => {       
         let body = {
             cityname:req.body.cityname,
             state_id:req.body.state_id,
@@ -517,9 +507,8 @@ app.post("/api/city",[authJwt.verifyToken],(req,res) => {
                 return res.send({message:'Added Records',city_id:rows.insertId});
             }
         });
-    });
-  
 });
+
 
 app.put('/api/city/:id',[authJwt.verifyToken],(req,res) => {
 
