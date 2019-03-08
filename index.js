@@ -300,6 +300,44 @@ app.get('/api/getBlock', [authJwt.verifyToken], (req, res) => {
     })
 });
 
+app.delete("/api/block/:id",[authJwt.verifyToken],(req,res) => {
+    connection.query("delete from block_master where block_id = ?",[req.params.id],function(err,rows){
+        if(err){
+            return res.status(401).send({message:"Can not delete record."});
+        }
+        return res.send({message:'Deleted record'});
+    });
+});
+
+app.post("/api/block",[authJwt.verifyToken],(req,res) => {       
+        let body = {
+            blockname:req.body.blockname,
+            username:req.username
+        }
+        connection.query("insert into block_master set ? ",body,function(err,rows){
+            if(err){
+                return res.status(401).send({message:'Not Inserted block record',err});
+            }
+            else{
+                return res.send({message:'Added Records',block_id:rows.insertId});
+            }
+        });
+});
+
+
+app.put('/api/block/:id',[authJwt.verifyToken],(req,res) => {
+
+    connection.query("update block_master SET blockname = ? where block_id = ?",[req.body.blockname,req.params.id],
+    function(err,rows){
+        if(err){
+            return res.status(401).send({message:'Record Not inserted',err});
+        }
+        else{
+            return res.send({message:'Update block records'});
+        }
+    });
+});
+
 ////////////////// get location ///////////////////////
 
 app.post('/api/getLocation', [authJwt.verifyToken], (req, res) => {
