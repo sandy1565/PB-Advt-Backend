@@ -411,6 +411,8 @@ app.get('/api/getState', [authJwt.verifyToken], (req, res) => {
     })
 });
 
+/* state master */
+
 app.get('/api/getState/:id', [authJwt.verifyToken], (req, res) => {
     connection.query('select * from state_master where country_id = ?',[req.params.id], (err, result) => {
         if (err) throw err;
@@ -420,6 +422,49 @@ app.get('/api/getState/:id', [authJwt.verifyToken], (req, res) => {
         // ////console.log(result)
     })
 });
+
+app.delete("/api/state/:id",[authJwt.verifyToken],(req,res) => {
+    connection.query("delete from state_master where state_id = ?",[req.params.id],function(err,rows){
+        if(err){
+            return res.status(401).send({message:"Can not delete record."});
+        }
+        return res.send({message:'Deleted record'});
+    });
+});
+
+app.post("/api/state",[authJwt.verifyToken],(req,res) => {    
+    connection.query("select state_id from state_master",function(err,row){       
+        if(err || !row[0]){
+            return res.status(401).send({message:'Not Inserted state record'});
+        }
+        let body = {
+            statename:req.body.statename,
+        }
+        connection.query("insert into state_master set ?",body,function(err,rows){
+            if(err){
+                return res.status(401).send({message:'Not Inserted state record',err});
+            }
+            else{
+                return res.send({message:'Added Records',state_id:body.state_id});
+            }
+        });
+    });
+  
+});
+
+app.put('/api/state/:id',[authJwt.verifyToken],(req,res) => {
+
+    connection.query("update state_master SET state_name = ? where state_id = ?",[req.body.state_name,req.params.id],
+    function(err,rows){
+        if(err){
+            return res.status(401).send({message:'Record Not inserted',err});
+        }
+        else{
+            return res.send({message:'Update state records'});
+        }
+    });
+});
+
 
 
 // get city

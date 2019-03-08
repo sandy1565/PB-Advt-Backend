@@ -17,6 +17,7 @@
     "ejs": "^2.6.1",
     "express": "^4.16.4",
     "fb-messenger": "^2.3.1",
+    "git": "^0.1.5",
     "googleapis": "^27.0.0",
     "heroku": "^7.19.4",
     "html-pdf": "^2.2.0",
