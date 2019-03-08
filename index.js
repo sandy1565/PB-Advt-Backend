@@ -633,8 +633,6 @@ app.put('/api/location/:id',[authJwt.verifyToken],(req,res) => {
     });
 });
 
-
-
 ////////////////////get floor ////////////////////////
 
 app.get('/api/getFloor', [authJwt.verifyToken], (req, res) => {
@@ -646,6 +644,53 @@ app.get('/api/getFloor', [authJwt.verifyToken], (req, res) => {
         // ////console.log(result)
     })
 });
+
+app.delete("/api/floor/:id",[authJwt.verifyToken],(req,res) => {
+    connection.query("delete from floor_master where floor_id = ?",[req.params.id],function(err,rows){
+        if(err){
+            return res.status(401).send({message:"Can not delete record."});
+        }
+        return res.send({message:'Deleted record'});
+    });
+});
+
+app.post("/api/floor",[authJwt.verifyToken],(req,res) => {    
+    connection.query("select max(floor_id) as floor_id from floor_master",function(err,row){       
+        if(err || !row[0]){
+            return res.status(401).send({message:'Not Inserted floor record'});
+        }
+        let body = {
+            floor_type:req.body.floor_type,
+            floor_id:row[0].floor_id+1,
+            username:req.username
+        }
+        connection.query("insert into floor_master set ? ",body,function(err,rows){
+            if(err){
+                return res.status(401).send({message:'Not Inserted floor record',err});
+            }
+            else{
+                return res.send({message:'Added Records',floor_id:body.floor_id});
+            }
+        });
+    });
+  
+});
+
+app.put('/api/floor/:id',[authJwt.verifyToken],(req,res) => {
+
+    connection.query("update floor_master SET floor_type = ? where floor_id = ?",[req.body.floor_type,req.params.id],
+    function(err,rows){
+        if(err){
+            return res.status(401).send({message:'Record Not inserted',err});
+        }
+        else{
+            return res.send({message:'Update floor records'});
+        }
+    });
+});
+
+
+
 
 // Get all person 
 app.get('/api/getPerson', [authJwt.verifyToken], (req, res) => {
