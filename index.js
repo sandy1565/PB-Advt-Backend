@@ -446,7 +446,7 @@ app.post("/api/state",[authJwt.verifyToken],(req,res) => {
                 return res.status(401).send({message:'Not Inserted state record',err});
             }
             else{
-                return res.send({message:'Added Records',state_id:body.state_id});
+                return res.send({message:'Added Records',state_id:body.insertId});
             }
         });
     });
@@ -455,7 +455,7 @@ app.post("/api/state",[authJwt.verifyToken],(req,res) => {
 
 app.put('/api/state/:id',[authJwt.verifyToken],(req,res) => {
 
-    connection.query("update state_master SET state_name = ? where state_id = ?",[req.body.state_name,req.params.id],
+    connection.query("update state_master SET statename = ? where state_id = ?",[req.body.state_name,req.params.id],
     function(err,rows){
         if(err){
             return res.status(401).send({message:'Record Not inserted',err});
@@ -490,9 +490,67 @@ app.get('/api/getCities/:id', [authJwt.verifyToken], (req, res) => {
     })
 })
 
+app.delete("/api/city/:id",[authJwt.verifyToken],(req,res) => {
+    connection.query("delete from city_master where city_id = ?",[req.params.id],function(err,rows){
+        if(err){
+            return res.status(401).send({message:"Can not delete record."});
+        }
+        return res.send({message:'Deleted record'});
+    });
+});
+
+app.post("/api/city",[authJwt.verifyToken],(req,res) => {    
+    connection.query("select city_id from city_master",function(err,row){       
+        if(err || !row[0]){
+            return res.status(401).send({message:'Not Inserted city record'});
+        }
+        let body = {
+            cityname:req.body.cityname,
+            state_id:req.body.state_id,
+            country_id: req.body.country_id
+        }
+        connection.query("insert into city_master set ? ",body,function(err,rows){
+            if(err){
+                return res.status(401).send({message:'Not Inserted city record',err});
+            }
+            else{
+                return res.send({message:'Added Records',city_id:body.insertId});
+            }
+        });
+    });
+  
+});
+
+app.put('/api/city/:id',[authJwt.verifyToken],(req,res) => {
+
+    connection.query("update city_master SET cityname = ? where city_id = ?",[req.body.cityname,req.params.id],
+    function(err,rows){
+        if(err){
+            return res.status(401).send({message:'Record Not inserted',err});
+        }
+        else{
+            return res.send({message:'Update city records'});
+        }
+    });
+});
+
+
+
+
 /* get location */
 app.get('/api/getLocation', [authJwt.verifyToken], (req, res) => {
     connection.query('select * from location_master', (err, result) => {
+        if (err) throw err;
+        else {
+            res.json(result)
+        }
+        // ////console.log(result)
+    })
+})
+
+// get location
+app.get('/api/getLocation/:id', [authJwt.verifyToken], (req, res) => {
+    connection.query('select * from location_master where city_id = ?',[req.params.id], (err, result) => {
         if (err) throw err;
         else {
             res.json(result)
