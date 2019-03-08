@@ -446,7 +446,7 @@ app.post("/api/state",[authJwt.verifyToken],(req,res) => {
                 return res.status(401).send({message:'Not Inserted state record',err});
             }
             else{
-                return res.send({message:'Added Records',state_id:body.insertId});
+                return res.send({message:'Added Records',state_id:rows.insertId});
             }
         });
     });
@@ -514,7 +514,7 @@ app.post("/api/city",[authJwt.verifyToken],(req,res) => {
                 return res.status(401).send({message:'Not Inserted city record',err});
             }
             else{
-                return res.send({message:'Added Records',city_id:body.insertId});
+                return res.send({message:'Added Records',city_id:rows.insertId});
             }
         });
     });
