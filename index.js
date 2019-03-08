@@ -439,8 +439,9 @@ app.post("/api/state",[authJwt.verifyToken],(req,res) => {
         }
         let body = {
             statename:req.body.statename,
+            country_id: req.body.country_id
         }
-        connection.query("insert into state_master set ?",body,function(err,rows){
+        connection.query("insert into state_master set ? ",body,function(err,rows){
             if(err){
                 return res.status(401).send({message:'Not Inserted state record',err});
             }
