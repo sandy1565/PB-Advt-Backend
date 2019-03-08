@@ -507,6 +507,7 @@ app.post("/api/city",[authJwt.verifyToken],(req,res) => {
         let body = {
             cityname:req.body.cityname,
             state_id:req.body.state_id,
+            username:req.username
         }
         connection.query("insert into city_master set ? ",body,function(err,rows){
             if(err){
