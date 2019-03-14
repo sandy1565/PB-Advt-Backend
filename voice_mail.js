@@ -7,7 +7,6 @@ const nexmo = new Nexmo({
     privateKey: "./private.key",
   });
 
-
  module.exports =  function makeCall(phone_number,voicePath, callback){
     
   nexmo.calls.create({

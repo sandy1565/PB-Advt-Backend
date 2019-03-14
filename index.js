@@ -499,6 +499,55 @@ app.put('/api/state/:id',[authJwt.verifyToken],(req,res) => {
 });
 
 
+// get District
+app.get('/api/district/:id', [authJwt.verifyToken], (req, res) => {
+    connection.query('select * from district_master where state_id = ?',[req.params.id],(err, result) => {
+        if (err) throw err;
+        else {
+            res.json(result)
+        }
+        // ////console.log(result)
+    })
+});
+
+app.post("/api/district",[authJwt.verifyToken],(req,res) => {    
+    let body = {
+         district_name:req.body.district_name,
+         state_id: req.body.state_id
+     };
+     connection.query("insert into district_master set ? ",body,function(err,rows){
+         if(err){
+             return res.status(401).send({message:'Not Inserted district record',err});
+         }
+         else{
+             return res.send({message:'Added Records',district_id:rows.insertId});
+         }
+     });
+});
+
+app.delete("/api/district/:id",[authJwt.verifyToken],(req,res) => {
+    connection.query("delete from district_master where district_id = ?",[req.params.id],function(err,rows){
+        if(err){
+            return res.status(401).send({message:"Can not delete record."});
+        }
+        return res.send({message:'Deleted record'});
+    });
+});
+
+app.put('/api/district/:id',[authJwt.verifyToken],(req,res) => {
+
+    connection.query("update district_master SET district_name = ? where district_id = ?",[req.body.district_name,req.params.id],
+    function(err,rows){
+        if(err){
+            return res.status(401).send({message:'Record Not inserted',err});
+        }
+        else{
+            return res.send({message:'Update district records'});
+        }
+    });
+});
+
+
 
 // get city
 app.get('/api/getCities', [authJwt.verifyToken], (req, res) => {
@@ -513,7 +562,7 @@ app.get('/api/getCities', [authJwt.verifyToken], (req, res) => {
 
 // get city
 app.get('/api/getCities/:id', [authJwt.verifyToken], (req, res) => {
-    connection.query('select * from city_master where state_id = ?',[req.params.id], (err, result) => {
+    connection.query('select * from city_master where district_id = ?',[req.params.id], (err, result) => {
         if (err) throw err;
         else {
             res.json(result)
@@ -534,7 +583,7 @@ app.delete("/api/city/:id",[authJwt.verifyToken],(req,res) => {
 app.post("/api/city",[authJwt.verifyToken],(req,res) => {       
         let body = {
             cityname:req.body.cityname,
-            state_id:req.body.state_id,
+            district_id:req.body.district_id,
             username:req.username
         }
         connection.query("insert into city_master set ? ",body,function(err,rows){
@@ -598,7 +647,7 @@ app.delete("/api/location/:id",[authJwt.verifyToken],(req,res) => {
 app.post("/api/location",[authJwt.verifyToken],(req,res) => {    
     connection.query("select max(location_id) as location_id from location_master",function(err,row){       
         if(err || !row[0]){
-            return res.status(401).send({message:'Not Inserted lcoation record'});
+            return res.status(401).send({message:'Not Inserted lcoation record 1'});
         }
         let body = {
             location_name:req.body.location_name,

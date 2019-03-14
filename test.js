@@ -30,4 +30,14 @@ function sendSMS(numbers,message,callback){
   
 }
 
+function sendBulkSMS(number,message,callback){
+  const url = "https://www.bulksmsgateway.in/sendmessage.php";
+  const strPost = "?user=sandy1565&password=Bcse1565&message=" + message +
+   "&sender=OPTINS" + "&mobile="+number + "&type=1";
+  https.get(url+strPost,function(err,response){
+    console.log(err,response);
+  })
+}
+sendBulkSMS("919667763450","Hi");
+
 // sendSMS("919667763450","Hi");
