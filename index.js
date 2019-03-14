@@ -498,7 +498,16 @@ app.put('/api/state/:id',[authJwt.verifyToken],(req,res) => {
     });
 });
 
-
+// get District
+app.get('/api/district', [authJwt.verifyToken], (req, res) => {
+    connection.query('select * from district_master',(err, result) => {
+        if (err) throw err;
+        else {
+            res.json(result)
+        }
+        // ////console.log(result)
+    })
+});
 // get District
 app.get('/api/district/:id', [authJwt.verifyToken], (req, res) => {
     connection.query('select * from district_master where state_id = ?',[req.params.id],(err, result) => {
