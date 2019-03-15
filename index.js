@@ -760,8 +760,8 @@ app.get('/api/getPerson', [authJwt.verifyToken], (req, res) => {
                 console.log(item.firstname);
                 item.firstname = encryption.decrypt((item.firstname).toString());
                 item.middlename = item.middlename ? encryption.decrypt(item.middlename) : item.middlename,
-                    item.lastname = encryption.decrypt(item.lastname);
-                item.address = encryption.decrypt(item.address);
+                item.lastname = item.lastname?encryption.decrypt(item.lastname):item.lastname;
+                item.address = item.address?encryption.decrypt(item.address):item.address;
                 item.gender = encryption.decrypt(item.gender);
                 item.mobile_number1 = encryption.decrypt(item.mobile_number1);
                 item.mobile_number2 = item.mobile_number2?encryption.decrypt(item.mobile_number2):'';
@@ -782,9 +782,8 @@ app.get('/api/getPersonData/:id', [authJwt.verifyToken], (req, res) => {
                 data = result[0];
                 data.firstname = encryption.decrypt(data.firstname);
                 data.middlename = data.middlename ? encryption.decrypt(data.middlename) : data.middlename,
-
-                    data.lastname = encryption.decrypt(data.lastname);
-                data.address = encryption.decrypt(data.address);
+                data.lastname = data.lastname ? encryption.decrypt(data.lastname) : data.lastname;
+                data.address = data.address?encryption.decrypt(data.address):data.address;
                 data.gender = encryption.decrypt(data.gender);
                 data.mobile_number1 = encryption.decrypt(data.mobile_number1);
                 data.mobile_number2 = data.mobile_number2?encryption.decrypt(data.mobile_number2):'';
@@ -801,31 +800,42 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
     var personDetails = {
         firstname: encryption.encrypt(req.body.firstname),
         middlename: req.body.middlename ? encryption.encrypt(req.body.middlename) : req.body.middlename,
-        lastname: encryption.encrypt(req.body.lastname),
+        lastname: req.body.lastname? encryption.encrypt(req.body.lastname) : req.body.lastname,
         country_id: req.body.country_id,
         state_id: req.body.state_id,
+        district_id: req.body.district_id,
         city_id: req.body.city_id,
         block_id: req.body.block_id,
-        address: encryption.encrypt(req.body.address),
-        floor_id: req.body.floor_id,
-        location_id: req.body.location_id,
-        date_of_birth: req.body.date_of_birth,
-        pincode: req.body.pincode,
+        address: req.body.address?encryption.encrypt(req.body.address):req.body.address,
+        location_id: req.body.location_id,               
         gender: encryption.encrypt(req.body.gender),
         mobile_number1: encryption.encrypt(req.body.mobile_number1),
         mobile_number2: req.body.mobile_number2?encryption.encrypt(req.body.mobile_number2):'',
-        username: req.username,
-        email_id: req.body.email_id,
+        username: req.username,       
         creation_date: req.body.creation_date
     }
-    // ////console.log(req.body);
+
+    if(req.body.floor_id){
+        personDetails.floor_id = req.body.floor_id;
+    }
+    if(req.body.pincode){
+        personDetails.pincode = req.body.pincode;
+    }
+    if(req.body.email_id){
+        personDetails.email_id = req.body.email_id;
+    }
+
+    if(req.body.date_of_birth){
+        personDetails.date_of_birth = req.body.date_of_birth;
+    }
+
     var mobileNumberValidation = 'select COUNT(*) AS count from person_master WHERE mobile_number1 = ?'
     connection.query(mobileNumberValidation, [personDetails.mobile_number1], function (err, rows) {
         ////console.log(rows);
         const count = rows[0].count;
         ////console.log(count);        
         if (count > 0) {
-            res.json({
+            res.status(401).json({
                 status: 401,
                 message: "Given Mobile Number is Registered. Please provide another number."
             });
@@ -834,7 +844,7 @@ app.post('/api/advtPerson', [authJwt.verifyToken], urlencodedParser, function (r
         else {
             connection.query("INSERT INTO person_master SET ?", personDetails, function (err, result) {
                 if (err) {
-                    res.json({
+                    res.status(401).json({
                         message: err
                     })
                 }
@@ -859,6 +869,7 @@ app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser,
     lastname=?,
     country_id=?,
     state_id=?,
+    district_id=?,
     city_id=?,
     location_id=?,
     block_id=?,
@@ -873,9 +884,10 @@ app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser,
     connection.query(query, [
         encryption.encrypt(req.body.firstname),
         req.body.middlename ? encryption.encrypt(req.body.middlename) : req.body.middlename,
-        encryption.encrypt(req.body.lastname),
+        req.body.lastname ? encryption.encrypt(req.body.lastname): req.body.lastname,
         req.body.country_id,
         req.body.state_id,
+        req.body.district_id,
         req.body.city_id,
         req.body.location_id,
         req.body.block_id,
@@ -888,7 +900,7 @@ app.put('/api/updatePerson/:person_id', [authJwt.verifyToken], urlencodedParser,
         req.body.mobile_number2?encryption.encrypt(req.body.mobile_number2):'',
         req.params.person_id], function (err, result) {
             if (err) {
-                res.json({
+                res.status(401).json({
                     status: 400,
                     message: err
                 })
