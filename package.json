@@ -20,7 +20,6 @@
     "git": "^0.1.5",
     "googleapis": "^27.0.0",
     "heroku": "^7.19.4",
-    "html-pdf": "^2.2.0",
     "jsonwebtoken": "^8.4.0",
     "mysql": "^2.16.0",
     "nexmo": "^2.4.1",
