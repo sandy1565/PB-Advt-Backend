@@ -271,6 +271,7 @@ app.use(function (req, res, next) {
 var PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
+    console.log(process.env.PORT);
     ////console.log('Server is running on ',PORT);
 })
 
