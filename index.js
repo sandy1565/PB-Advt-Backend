@@ -1555,7 +1555,7 @@ app.get('/api/getPublish', [authJwt.verifyToken], (req, res) => {
 
 
 app.use('/api/client', clientRouter);
-app.use('/api/log', logger);
+// app.use('/api/log', logger);
 
 
 function saveToDisc(name, fileExt, base64String, callback) {
