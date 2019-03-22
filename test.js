@@ -38,6 +38,6 @@ function sendBulkSMS(number,message,callback){
     console.log(err,response);
   })
 }
-sendBulkSMS("919667763450","Hi");
+// sendBulkSMS("919667763450","Hi");
 
 // sendSMS("919667763450","Hi");

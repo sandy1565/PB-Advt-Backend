@@ -27,9 +27,9 @@ const nexmo = new Nexmo({
           ]
         
       }, function(err,data){
-       console.log("VOICE *************");
-       console.log(err,"https://publishadvertisement.herokuapp.com"+voicePath);
-       console.log(data); 
+      //  console.log("VOICE *************");
+      //  console.log(err,"https://publishadvertisement.herokuapp.com"+voicePath);
+      //  console.log(data); 
         callback(err,data);
       });
   

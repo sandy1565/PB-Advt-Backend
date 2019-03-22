@@ -28,7 +28,7 @@ app.use('/public', express.static(path.resolve(__dirname, 'public')));
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
 app.use(bodyParser.json({ limit: '10mb' }));
-cronJob('0 41 */1 * * *');
+// cronJob('0 41 */1 * * *');
 
 
 function cronJob(timePattern) {
