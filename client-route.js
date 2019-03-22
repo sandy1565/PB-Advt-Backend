@@ -191,9 +191,9 @@ router.put("/:client_id", [authJwt.verifyToken], function (req, res) {
             return;
         }
       let validClientId = record.client_id;
-        ({ profile_pic, client_name, country_id, state_id, city_id, location_id, block_id, firm_type, gst_number, representative_name, representative_id, phone_number, email_address, registration_details } = req.body);
-        if (!client_name || !country_id || !state_id || !city_id
-            || !location_id || !block_id || !gst_number || !representative_name
+        ({ profile_pic, client_name, country_id, state_id, district_id,city_id, location_id, block_id, firm_type, gst_number, representative_name, representative_id, phone_number, email_address, registration_details } = req.body);
+        if (!client_name || !country_id || !state_id || !city_id || !district_id ||
+             !location_id || !block_id || !gst_number || !representative_name
             || !phone_number || !email_address || !registration_details || !firm_type) {
             res.status(401).send({
                 error: true,
@@ -252,7 +252,7 @@ router.put("/:client_id", [authJwt.verifyToken], function (req, res) {
             }
 
             let dataToSave = {
-                client_name:encryption.encrypt(client_name), country_id, state_id,
+                client_name:encryption.encrypt(client_name), country_id, state_id,district_id,
                 city_id, location_id, block_id,
                 gst_number:encryption.encrypt(gst_number), representative_name:encryption.encrypt(representative_name),
                 representative_id, phone_number:encryption.encrypt(phone_number),
@@ -299,7 +299,8 @@ router.put("/:client_id", [authJwt.verifyToken], function (req, res) {
 router.post("/", [authJwt.verifyToken], function (req, res) {
 
     // getDocument(req,res);
-    ({ profile_pic, client_name, country_id, state_id, city_id, location_id, block_id, firm_type, gst_number, representative_name, representative_id, phone_number, email_address, registration_details } = req.body);
+    ({ profile_pic, client_name, country_id, state_id,district_id, city_id, location_id, block_id, 
+        firm_type, gst_number, representative_name, representative_id, phone_number, email_address, registration_details } = req.body);
     if (!client_name || !country_id || !state_id || !city_id
         || !location_id || !block_id || !gst_number || !representative_name
         || !phone_number || !email_address || !registration_details || !firm_type) {
@@ -411,7 +412,7 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
 
 
                 connection.query(insertRecordToClientMaster, {
-                    client_name:encryption.encrypt(client_name), country_id, state_id,
+                    client_name:encryption.encrypt(client_name), country_id, state_id,district_id,
                     city_id, location_id, block_id,
                     gst_number:encryption.encrypt(gst_number), representative_name:encryption.encrypt(representative_name),
                     representative_id, phone_number:encryption.encrypt(phone_number),
