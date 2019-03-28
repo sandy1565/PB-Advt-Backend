@@ -28,7 +28,7 @@ app.use('/public', express.static(path.resolve(__dirname, 'public')));
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
 app.use(bodyParser.json({ limit: '10mb' }));
-cronJob('0 0 14 * * *');
+cronJob('0 11 15 * * *');
 
 
 function cronJob(timePattern) {
@@ -100,10 +100,14 @@ function cronJob(timePattern) {
                                 console.log("allPersons",allPersons);
                                 console.log("advert",advert);
                                 let selectedPersons = allPersons.filter(person => {
-
+                                    if(person.firstname == "test"){
+                                        console.log("blockids",advert.block_ids.split(","),person.block_id);
+                                        console.log("locationids",advert.location_ids.split(","),person.location_id);
+                                        console.log("age",person.age,advert.age_from,advert.age_to );
+                                    }
                                     return (
-                                        advert.block_ids.split(",").map(n=>+n).includes(person.block_id)
-                                        && advert.location_ids.split(",").map(n=>+n).includes(person.location_id)
+                                        advert.block_ids.split(",").map(n=>+n).includes(+person.block_id)
+                                        && advert.location_ids.split(",").map(n=>+n).includes(+person.location_id)
                                         && (advert.age_from ?advert.age_from <= person.age:true) &&
                                         (advert.age_to ? person.age <= advert.age_to :true)
                                     );
@@ -1165,6 +1169,7 @@ app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req,
         advt_details: encryption.encrypt(req.body.advt_details),
         country_id: req.body.country_id,
         state_id: req.body.state_id,
+        district_id:req.body.district_id,
         city_id: req.body.city_id,
         location_ids: req.body.location_ids.join(","),
         block_ids: req.body.block_ids.join(","),
@@ -1286,7 +1291,25 @@ app.post('/api/addAdvt', [authJwt.verifyToken], urlencodedParser, function (req,
 
 
 ////////////////////////////////////////////////UPDATE ADVT/////////////////////////////////////////////////////////
+app.put('/api/updateStatuAdvt/:id', [authJwt.verifyToken], urlencodedParser, function (req, res) {
+    var sql = "update advt_master set ? where advt_id=" + req.params.id;
+    connection.query(sql,{status:req.body.status},function(err,roes){
+        if(err){
+            res.status(401).send({
+                message:"Error updating",
+                err,
+                error:true
+            });
+            return;
+        }
+        
+        res.send({
+            message:"Updated records",
+            error:false
+        });
+    })
 
+});
 
 app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function (req, res) {
     let msgs = [];
@@ -1326,6 +1349,10 @@ app.put('/api/updateadvt/:id', [authJwt.verifyToken], urlencodedParser, function
             username: req.body.username,
             status: req.body.status,
             type: req.body.type.join(","),
+            country_id:req.body.country_id,
+            state_id:req.body.state_id,
+            district_id:req.body.district_id,
+            city_id:req.body.city_id,
             location_ids: req.body.location_ids.join(","),
             block_ids: req.body.block_ids.join(",")
         }

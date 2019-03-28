@@ -423,6 +423,7 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
                     profile_id,
                     document_id
                 }, async function (err, result) {
+                    console.log(err);
                     if (err) {
                         connection.query('delete from login where username = ?', [loginUsrName], function (err, result) {
 
@@ -439,8 +440,8 @@ router.post("/", [authJwt.verifyToken], function (req, res) {
                     let mailOptions = {
                         from: 'sandeepkr5495@gmail.com', // sender address
                         to: `${email_address}`, // list of receivers
-                        subject: "Hello ✔", // Subject line
-                        text: "Hello world?", // plain text body
+                        subject: "Welcome", // Subject line
+                        text: "Welcome", // plain text body
                         html: `
                         Your user name is ${loginUsrName} and generated password is ${loginUsrPwd}
                         
