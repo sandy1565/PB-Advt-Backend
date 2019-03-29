@@ -28,7 +28,7 @@ app.use('/public', express.static(path.resolve(__dirname, 'public')));
 app.use(cors());
 var urlencodedParser = bodyParser.urlencoded({ extended: false, parameterLimit: 100000, limit: '10mb' });
 app.use(bodyParser.json({ limit: '10mb' }));
-cronJob('0 11 15 * * *');
+cronJob('0 19 15 * * *');
 
 
 function cronJob(timePattern) {
@@ -60,7 +60,9 @@ function cronJob(timePattern) {
                     //     return;
                     // }
                     const ftchPubDts = 'select *, CONVERT_TZ(from_publish_date,\'+00:00\',\'+05:30\') as from_publish_date,  CONVERT_TZ(to_publish_date,\'+00:00\',\'+05:30\') as to_publish_date from PUBLISH_DATE where advt_id = ?';
-                    connection.query(ftchPubDts, [advert.advt_id], function (err, rows) {
+                     connection.query(ftchPubDts, [advert.advt_id], function (err, rows) {
+                        console.log(err,rows);
+                   
                         if (err || !rows || !rows[0]) {
                             
                             return;
@@ -97,7 +99,7 @@ function cronJob(timePattern) {
                                 ['published',advert.advt_id],function(){
     
                                 });
-                                console.log("allPersons",allPersons);
+                                console.log("allPersons",allPersons.length);
                                 console.log("advert",advert);
                                 let selectedPersons = allPersons.filter(person => {
                                     if(person.firstname == "test"){
